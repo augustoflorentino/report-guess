@@ -44,10 +44,10 @@ int32_t infr_value(const infr_field_t *field, const unsigned char *report)
                             (field->flags & INFR_BIG_ENDIAN) != 0);
     uint32_t sign;
 
-    if (!(field->flags & INFR_SIGNED) || field->bit_size >= 32)
+    if (!(field->flags & INFR_SIGNED))
         return (int32_t)raw;
     sign = 1u << (field->bit_size - 1);
-    return (int32_t)(raw ^ sign) - (int32_t)sign;
+    return (int32_t)((int64_t)(raw ^ sign) - (int64_t)sign);
 }
 
 int infr_transition_label(const infr_session_t *s, size_t index)

@@ -70,11 +70,11 @@ static void infr_flush_padding(infr_writer_t *w)
 
 static void infr_axis_range(const infr_field_t *f, int32_t *min, int32_t *max)
 {
-    unsigned size = f->bit_size > 31 ? 31 : f->bit_size;
+    unsigned size = f->bit_size;
 
     if (f->flags & INFR_SIGNED) {
-        *min = -(int32_t)(1u << (size - 1));
         *max = (int32_t)((1u << (size - 1)) - 1);
+        *min = -*max - 1;
     } else {
         *min = 0;
         *max = (int32_t)((1u << size) - 1);

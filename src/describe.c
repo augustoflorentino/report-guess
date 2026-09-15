@@ -63,7 +63,7 @@ static void infr_measure(const infr_session_t *s, infr_field_t *f)
         f->logical_min = v < f->logical_min ? v : f->logical_min;
         f->logical_max = v > f->logical_max ? v : f->logical_max;
         if (s->labels[i] == INFR_REST && d > f->noise)
-            f->noise = (int32_t)d;
+            f->noise = d > INT32_MAX ? INT32_MAX : (int32_t)d;
     }
     if (f->noise > 0)
         f->flags |= INFR_NOISY;
@@ -91,7 +91,7 @@ static void infr_describe_hat(const infr_session_t *s, infr_field_t *f)
 
 void infr_describe_field(infr_session_t *s, infr_field_t *f)
 {
-    if (f->kind == INFR_AXIS && infr_prefers_signed(s, f))
+    if (f->kind == INFR_AXIS && (f->bit_size >= 32 || infr_prefers_signed(s, f)))
         f->flags |= INFR_SIGNED;
     f->label = infr_field_label(s, f);
     infr_measure(s, f);
