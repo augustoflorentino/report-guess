@@ -71,6 +71,19 @@ Labels: `INFR_REST` (0) marks reports taken with the device untouched, `INFR_FRE
 of free use, and positive numbers one action each. A field moved by no particular action has
 label `INFR_NO_LABEL`.
 
+## Validation
+
+`tests/data` holds labeled sessions and the expected analysis, checked by `ctest`:
+
+- `ninja-*`: Gamer Ninja Sword (Home+X mode) reports built from its known mapping, labeled and
+  free play
+- `ds4-*`, `ds5-*`: hid-tools DualShock 4 and DualSense simulators over USB and Bluetooth, with
+  the DualShock 4 counter and timestamp filled in as the hardware does
+
+`tests/gen` regenerates them (`sony.py` needs hid-tools), `check.py` compares an analysis with
+the field layout taken from the device descriptor, and `decode.py` parses the emitted
+descriptor with hid-tools and checks it against the inferred fields.
+
 ## Versioning
 
 Semantic Versioning. Compatible releases bump the minor version; incompatible ones bump the

@@ -1,0 +1,8 @@
+execute_process(COMMAND ${RUN} ${SAMPLES} ${REPORT_ID} OUTPUT_VARIABLE got RESULT_VARIABLE status)
+if(NOT status EQUAL 0)
+    message(FATAL_ERROR "infer_run failed on ${SAMPLES}")
+endif()
+file(READ ${EXPECTED} want)
+if(NOT got STREQUAL want)
+    message(FATAL_ERROR "output differs from ${EXPECTED}:\n${got}")
+endif()

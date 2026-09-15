@@ -1,0 +1,79 @@
+0 8 constant range=1..1 rest=1 noise=0 label=-2 usage=0:0
+8 8 axis noisy range=0..255 rest=128 noise=1 label=14 usage=1:30
+16 8 axis noisy range=0..255 rest=128 noise=1 label=15 usage=1:31
+24 8 axis noisy range=1..255 rest=128 noise=1 label=16 usage=1:32
+32 8 axis noisy range=0..255 rest=128 noise=1 label=17 usage=1:33
+40 4 hat null range=0..7 rest=15 noise=0 label=13 usage=1:39
+44 1 button range=0..1 rest=0 noise=0 label=1 usage=9:1
+45 1 button range=0..1 rest=0 noise=0 label=2 usage=9:2
+46 1 button range=0..1 rest=0 noise=0 label=3 usage=9:3
+47 1 button range=0..1 rest=0 noise=0 label=4 usage=9:4
+48 1 button range=0..1 rest=0 noise=0 label=5 usage=9:5
+49 1 button range=0..1 rest=0 noise=0 label=6 usage=9:6
+50 1 button range=0..1 rest=0 noise=0 label=7 usage=9:7
+51 1 button range=0..1 rest=0 noise=0 label=8 usage=9:8
+52 1 button range=0..1 rest=0 noise=0 label=9 usage=9:9
+53 1 button range=0..1 rest=0 noise=0 label=10 usage=9:a
+54 1 button range=0..1 rest=0 noise=0 label=11 usage=9:b
+55 1 button range=0..1 rest=0 noise=0 label=12 usage=9:c
+56 2 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+58 6 counter range=0..63 rest=0 noise=0 label=-2 usage=0:0 step=1
+64 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+72 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+80 16 counter range=0..65535 rest=0 noise=0 label=-2 usage=0:0 step=0
+96 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+104 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+112 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+120 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+128 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+136 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+144 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+152 7 noise noisy range=35..76 rest=56 noise=21 label=-2 usage=0:0
+159 1 constant range=1..1 rest=1 noise=0 label=-2 usage=0:0
+160 8 constant range=255..255 rest=255 noise=0 label=-2 usage=0:0
+168 7 noise noisy range=60..100 rest=81 noise=21 label=-2 usage=0:0
+175 1 constant range=1..1 rest=1 noise=0 label=-2 usage=0:0
+176 8 constant range=36..36 rest=36 noise=0 label=-2 usage=0:0
+184 7 noise noisy range=61..100 rest=80 noise=20 label=-2 usage=0:0
+191 1 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+192 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+200 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+208 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+216 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+224 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+232 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+240 8 constant range=27..27 rest=27 noise=0 label=-2 usage=0:0
+248 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+256 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+264 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+272 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+280 8 constant range=128..128 rest=128 noise=0 label=-2 usage=0:0
+288 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+296 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+304 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+312 8 constant range=128..128 rest=128 noise=0 label=-2 usage=0:0
+320 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+328 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+336 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+344 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+352 8 constant range=128..128 rest=128 noise=0 label=-2 usage=0:0
+360 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+368 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+376 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+384 8 constant range=128..128 rest=128 noise=0 label=-2 usage=0:0
+392 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+400 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+408 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+416 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+424 8 constant range=128..128 rest=128 noise=0 label=-2 usage=0:0
+432 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+440 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+448 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+456 8 constant range=128..128 rest=128 noise=0 label=-2 usage=0:0
+464 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+472 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+480 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+488 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+496 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+504 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+descriptor 05010905a1017501950881030930150026ff007508950181020931150026ff007508950181020932150026ff007508950181020933150026ff007508950181020939150025077504950181420509090115002501750195018102090215002501750195018102090315002501750195018102090415002501750195018102090515002501750195018102090615002501750195018102090715002501750195018102090815002501750195018102090915002501750195018102090a15002501750195018102090b15002501750195018102090c15002501750195018102750196c8018103c0

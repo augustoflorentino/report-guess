@@ -50,6 +50,18 @@ if(INFER_BUILD_TESTS)
     add_executable(test_infer tests/test_infer.c)
     target_link_libraries(test_infer PRIVATE infer)
     add_test(NAME infer COMMAND test_infer)
+    add_executable(infer_run tests/infer_run.c)
+    target_link_libraries(infer_run PRIVATE infer)
+    foreach(set ds4-usb:0 ds4-bt:0 ds5-usb:0 ds5-bt:0 ninja-labeled:1 ninja-free:1)
+        string(REPLACE ":" ";" parts ${set})
+        list(GET parts 0 name)
+        list(GET parts 1 report_id)
+        add_test(NAME data_${name}
+            COMMAND ${CMAKE_COMMAND} -DRUN=$<TARGET_FILE:infer_run> -DREPORT_ID=${report_id}
+                -DSAMPLES=${PROJECT_SOURCE_DIR}/tests/data/${name}.samples
+                -DEXPECTED=${PROJECT_SOURCE_DIR}/tests/data/${name}.expected
+                -P ${PROJECT_SOURCE_DIR}/tests/compare.cmake)
+    endforeach()
     add_library(infer_header_check OBJECT tests/header_check.c)
     target_include_directories(infer_header_check PRIVATE include)
 endif()

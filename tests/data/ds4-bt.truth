@@ -1,0 +1,24 @@
+24 8 axis page=1
+32 8 axis page=1
+40 8 axis page=1
+48 8 axis page=1
+56 4 hat page=1
+60 1 button page=9
+61 1 button page=9
+62 1 button page=9
+63 1 button page=9
+64 1 button page=9
+65 1 button page=9
+66 1 button page=9
+67 1 button page=9
+68 1 button page=9
+69 1 button page=9
+70 1 button page=9
+71 1 button page=9
+72 1 button page=9
+73 1 button page=9
+80 8 axis page=1
+88 8 axis page=1
+74 6 counter
+96 16 counter
+592 32 checksum

@@ -1,0 +1,27 @@
+0 8 constant range=1..1 rest=1 noise=0 label=-2 usage=0:0
+8 1 button active-low range=0..1 rest=0 noise=0 label=4 usage=9:1
+9 1 button active-low range=0..1 rest=0 noise=0 label=3 usage=9:2
+10 1 button active-low range=0..1 rest=0 noise=0 label=2 usage=9:3
+11 1 button active-low range=0..1 rest=0 noise=0 label=1 usage=9:4
+12 2 constant range=3..3 rest=3 noise=0 label=-2 usage=0:0
+14 1 button active-low range=0..1 rest=0 noise=0 label=6 usage=9:5
+15 1 constant range=1..1 rest=1 noise=0 label=-2 usage=0:0
+16 1 button active-low range=0..1 rest=0 noise=0 label=7 usage=9:6
+17 1 button active-low range=0..1 rest=0 noise=0 label=8 usage=9:7
+18 1 button active-low range=0..1 rest=0 noise=0 label=10 usage=9:8
+19 1 button active-low range=0..1 rest=0 noise=0 label=9 usage=9:9
+20 4 constant range=15..15 rest=15 noise=0 label=-2 usage=0:0
+24 1 button active-low range=0..1 rest=0 noise=0 label=12 usage=9:a
+25 1 button active-low range=0..1 rest=0 noise=0 label=11 usage=9:b
+26 1 button active-low range=0..1 rest=0 noise=0 label=13 usage=9:c
+27 1 button active-low range=0..1 rest=0 noise=0 label=14 usage=9:d
+28 2 constant range=3..3 rest=3 noise=0 label=-2 usage=0:0
+30 1 button active-low range=0..1 rest=0 noise=0 label=5 usage=9:e
+31 1 constant range=1..1 rest=1 noise=0 label=-2 usage=0:0
+32 8 axis noisy range=1..255 rest=128 noise=1 label=15 usage=1:30
+40 8 axis noisy range=1..255 rest=128 noise=1 label=16 usage=1:31
+48 8 axis noisy range=1..255 rest=128 noise=1 label=17 usage=1:32
+56 8 axis noisy range=1..255 rest=128 noise=1 label=18 usage=1:33
+64 8 axis range=0..255 rest=0 noise=0 label=19 usage=1:34
+72 8 axis range=0..255 rest=0 noise=0 label=20 usage=1:35
+descriptor 05010905a10185010509090115002501750195018102090215002501750195018102090315002501750195018102090415002501750195018102750195028103090515002501750195018102750195018103090615002501750195018102090715002501750195018102090815002501750195018102090915002501750195018102750195048103090a15002501750195018102090b15002501750195018102090c15002501750195018102090d15002501750195018102750195028103090e1500250175019501810275019501810305010930150026ff007508950181020931150026ff007508950181020932150026ff007508950181020933150026ff007508950181020934150026ff007508950181020935150026ff00750895018102c0
