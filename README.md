@@ -1,0 +1,81 @@
+# infer
+
+Infer the field layout of undocumented binary reports, such as those of a gamepad that speaks
+raw HID without a usable descriptor, and emit a HID report descriptor that describes them.
+
+Record reports while the device rests and while you perform known actions, label each report
+with the action, and `infr_analyze` finds:
+
+- rest noise: bits and fields that change while nothing is touched
+- buttons: single bits, active-high or active-low
+- continuous fields: width, sign, endianness, observed range, rest value (center) and noise
+- hats: 4-bit direction fields with a null state
+- counters (fixed step or timestamp-like), checksums (sum8, xor8, crc8, crc8 Maxim, crc32 with
+  an optional seed byte) and constant runs
+
+Each field gets the label of the action that moves it most, and a HID usage (buttons on the
+Button page, axes on Generic Desktop X..Wheel, hats as Hat Switch) that `infr_set_usage` can
+override per label. `infr_descriptor` writes a gamepad descriptor with one input field per
+inferred button, axis and hat at its bit position; counters, checksums, noise and constants become padding. Reports
+must go through `infr_normalize` (active-low buttons inverted, big-endian fields swapped) before
+they match that descriptor.
+
+All memory is allocated by `infr_create`; analysis never allocates.
+
+## Build and install
+
+```sh
+cmake -S . -B build -DBUILD_SHARED_LIBS=ON
+cmake --build build
+cmake --install build --prefix /usr/local
+```
+
+Use it from CMake:
+
+```cmake
+find_package(infer REQUIRED)
+target_link_libraries(app PRIVATE infer::infer)
+```
+
+Or with pkg-config:
+
+```sh
+cc app.c $(pkg-config --cflags --libs infer)
+```
+
+## Single-file form
+
+`scripts/amalgamate.sh` writes `dist/infer/infer.h`. Copy it into your project and, in exactly
+one `.c` file:
+
+```c
+#define INFR_IMPLEMENTATION
+#include "infer/infer.h"
+```
+
+Define `INFR_STATIC` as well to keep every function private to that file.
+
+## Usage
+
+See [`examples/basic.c`](examples/basic.c). The header `include/infer/infer.h` is the
+API reference.
+
+Conventions:
+
+- every function that can fail returns `INFR_OK` or an error code; `infr_strerror` describes it
+- what `infr_create` returns is released only by `infr_destroy`, which accepts `NULL`
+- functions never take ownership of their arguments; returned pointers belong to the library
+- pass your own allocator to `infr_create`, or `NULL` for `malloc`/`free`
+
+Labels: `INFR_REST` (0) marks reports taken with the device untouched, `INFR_FREE` (-1) reports
+of free use, and positive numbers one action each. A field moved by no particular action has
+label `INFR_NO_LABEL`.
+
+## Versioning
+
+Semantic Versioning. Compatible releases bump the minor version; incompatible ones bump the
+major version and the soname. See [CHANGELOG.md](CHANGELOG.md).
+
+## License
+
+MIT, see [LICENSE](LICENSE).
