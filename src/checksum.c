@@ -129,19 +129,45 @@ static infr_field_t *infr_add_checksum(infr_session_t *s, size_t pos, unsigned b
     return f;
 }
 
-static int infr_try_crc32(infr_session_t *s, size_t pos)
+static uint32_t infr_seed_state(int seed)
+{
+    unsigned char first = (unsigned char)seed;
+
+    if (seed == INFR_SEED_NONE)
+        return 0xffffffffu;
+    return infr_crc32_update(0xffffffffu, &first, 1);
+}
+
+static size_t infr_find_crc32(const infr_session_t *s, int *out_seed)
 {
     const unsigned char *r = infr_sample(s, 0);
-    uint32_t want = infr_raw(r, pos * 8, 32, 0);
+    size_t best = 0;
     int seed;
 
     for (seed = INFR_SEED_NONE; seed < INFR_SEEDS; seed++) {
-        if (infr_crc32(r, pos, seed) == want && infr_matches32(s, pos, seed)) {
-            infr_add_checksum(s, pos, 4, INFR_CRC32, pos)->seed = seed;
-            return 1;
+        uint32_t crc = infr_seed_state(seed);
+        size_t pos;
+
+        for (pos = 1; pos + 4 <= s->report_len; pos++) {
+            crc = infr_crc32_update(crc, r + pos - 1, 1);
+            if (pos > best && ~crc == infr_raw(r, pos * 8, 32, 0) && infr_byte_varies(s, pos, 4) &&
+                infr_matches32(s, pos, seed)) {
+                best = pos;
+                *out_seed = seed;
+            }
         }
     }
-    return 0;
+    return best;
+}
+
+static int infr_mixes_bytes(const infr_session_t *s, size_t pos, size_t covered)
+{
+    size_t varying = 0;
+    size_t b;
+
+    for (b = 0; b < covered && varying < 2; b++)
+        varying += b != pos && infr_byte_varies(s, b, 1);
+    return varying >= 2;
 }
 
 static int infr_try_check8(infr_session_t *s, size_t pos)
@@ -154,7 +180,7 @@ static int infr_try_check8(infr_session_t *s, size_t pos)
     covers[1] = s->report_len;
     for (algorithm = INFR_SUM8; algorithm <= INFR_CRC8_MAXIM; algorithm++) {
         for (c = 0; c < 2; c++) {
-            if (covers[c] == 0 || (c == 1 && algorithm >= INFR_CRC8))
+            if (covers[c] == 0 || (c == 1 && algorithm >= INFR_CRC8) || !infr_mixes_bytes(s, pos, covers[c]))
                 continue;
             if (infr_matches8(s, pos, algorithm, covers[c])) {
                 infr_add_checksum(s, pos, 1, algorithm, covers[c]);
@@ -167,12 +193,18 @@ static int infr_try_check8(infr_session_t *s, size_t pos)
 
 void infr_find_checksums(infr_session_t *s)
 {
+    int seed = INFR_SEED_NONE;
+    size_t crc_pos = infr_find_crc32(s, &seed);
     size_t pos;
 
     for (pos = s->report_len; pos-- > 0;) {
-        if (pos + 4 <= s->report_len && pos > 0 && infr_byte_varies(s, pos, 4) && infr_try_crc32(s, pos))
+        if (crc_pos > 0 && pos > crc_pos && pos < crc_pos + 4)
             continue;
-        if (infr_byte_varies(s, pos, 1))
-            infr_try_check8(s, pos);
+        if (crc_pos > 0 && pos == crc_pos) {
+            infr_add_checksum(s, pos, 4, INFR_CRC32, pos)->seed = seed;
+            return;
+        }
+        if (infr_byte_varies(s, pos, 1) && infr_try_check8(s, pos))
+            return;
     }
 }
