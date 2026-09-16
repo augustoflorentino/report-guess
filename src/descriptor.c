@@ -3,6 +3,7 @@
 #define INFR_TYPE_MAIN 0u
 #define INFR_TYPE_GLOBAL 1u
 #define INFR_TYPE_LOCAL 2u
+#define INFR_PADDING_CHUNK 4096u
 
 typedef struct {
     unsigned char *buf;
@@ -10,6 +11,11 @@ typedef struct {
     size_t len;
     uint32_t page;
     size_t padding;
+    int globals_set;
+    int32_t min;
+    int32_t max;
+    unsigned size;
+    uint32_t count;
 } infr_writer_t;
 
 static void infr_put(infr_writer_t *w, unsigned char byte)
@@ -49,23 +55,40 @@ static void infr_usage(infr_writer_t *w, uint32_t page, uint32_t usage)
     infr_unsigned_item(w, INFR_TYPE_LOCAL, 0x0, usage);
 }
 
+static void infr_size_count(infr_writer_t *w, unsigned size, uint32_t count)
+{
+    if (!w->globals_set || size != w->size)
+        infr_unsigned_item(w, INFR_TYPE_GLOBAL, 0x7, size);
+    if (!w->globals_set || count != w->count)
+        infr_unsigned_item(w, INFR_TYPE_GLOBAL, 0x9, count);
+    w->size = size;
+    w->count = count;
+}
+
 static void infr_main_input(infr_writer_t *w, int32_t min, int32_t max, unsigned size, unsigned flags)
 {
-    infr_signed_item(w, 0x1, min);
-    infr_signed_item(w, 0x2, max);
-    infr_unsigned_item(w, INFR_TYPE_GLOBAL, 0x7, size);
-    infr_unsigned_item(w, INFR_TYPE_GLOBAL, 0x9, 1);
+    if (!w->globals_set || min != w->min)
+        infr_signed_item(w, 0x1, min);
+    if (!w->globals_set || max != w->max)
+        infr_signed_item(w, 0x2, max);
+    infr_size_count(w, size, 1);
+    w->min = min;
+    w->max = max;
+    w->globals_set = 1;
     infr_unsigned_item(w, INFR_TYPE_MAIN, 0x8, flags);
 }
 
 static void infr_flush_padding(infr_writer_t *w)
 {
-    if (w->padding == 0)
-        return;
-    infr_unsigned_item(w, INFR_TYPE_GLOBAL, 0x7, 1);
-    infr_unsigned_item(w, INFR_TYPE_GLOBAL, 0x9, (uint32_t)w->padding);
-    infr_unsigned_item(w, INFR_TYPE_MAIN, 0x8, 0x03);
-    w->padding = 0;
+    while (w->padding > 0) {
+        uint32_t chunk = w->padding > INFR_PADDING_CHUNK ? INFR_PADDING_CHUNK : (uint32_t)w->padding;
+        int was_set = w->globals_set;
+
+        infr_size_count(w, 1, chunk);
+        w->globals_set = was_set;
+        infr_unsigned_item(w, INFR_TYPE_MAIN, 0x8, 0x03);
+        w->padding -= chunk;
+    }
 }
 
 static void infr_axis_range(const infr_field_t *f, int32_t *min, int32_t *max)
@@ -140,6 +163,7 @@ int infr_descriptor(const infr_session_t *session, unsigned report_id, unsigned 
     w.len = 0;
     w.page = 0x01;
     w.padding = 0;
+    w.globals_set = 0;
     infr_item(&w, INFR_TYPE_GLOBAL, 0x0, 0x01, 1);
     infr_item(&w, INFR_TYPE_LOCAL, 0x0, 0x05, 1);
     infr_item(&w, INFR_TYPE_MAIN, 0xa, 0x01, 1);
