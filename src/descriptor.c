@@ -116,23 +116,25 @@ static void infr_write_body(infr_writer_t *w, const infr_session_t *s, size_t st
     infr_flush_padding(w);
 }
 
+static int infr_starts_with_id(const infr_session_t *s, unsigned report_id)
+{
+    const infr_field_t *f = s->field_count > 0 ? &s->fields[0] : NULL;
+
+    return f != NULL && f->kind == INFR_CONSTANT && f->bit_size == 8 && f->rest == (int32_t)report_id;
+}
+
 int infr_descriptor(const infr_session_t *session, unsigned report_id, unsigned char *buf,
                     size_t buf_len, size_t *out_len)
 {
     infr_writer_t w;
-    size_t i;
 
     if (session == NULL || out_len == NULL || (buf == NULL && buf_len > 0) || report_id > 255)
         return INFR_ERR_ARG;
     *out_len = 0;
     if (!session->analyzed)
         return INFR_ERR_STATE;
-    for (i = 0; report_id != 0 && i < session->field_count; i++) {
-        const infr_field_t *f = &session->fields[i];
-
-        if (f->bit_offset < 8 && (f->kind != INFR_CONSTANT || f->bit_offset + f->bit_size > 8))
-            return INFR_ERR_ARG;
-    }
+    if (report_id != 0 && !infr_starts_with_id(session, report_id))
+        return INFR_ERR_ARG;
     w.buf = buf;
     w.cap = buf_len;
     w.len = 0;

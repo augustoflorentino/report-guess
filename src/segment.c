@@ -80,7 +80,7 @@ static int infr_hat_shape(const unsigned char *seen, uint32_t rest)
     unsigned directions = 0;
 
     if (rest == 8 || rest == 15) {
-        for (v = 9; v < INFR_HAT_VALUES; v++) {
+        for (v = 8; v < INFR_HAT_VALUES; v++) {
             if (seen[v] && v != rest)
                 return 0;
         }
