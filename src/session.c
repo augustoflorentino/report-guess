@@ -102,13 +102,29 @@ void infr_destroy(infr_session_t *session)
     session->free_fn(session->alloc_ctx, session);
 }
 
+static int infr_track_label(infr_session_t *s, int label)
+{
+    size_t i;
+
+    if (label <= INFR_REST)
+        return 1;
+    for (i = 0; i < s->label_count; i++) {
+        if (s->seen_labels[i] == label)
+            return 1;
+    }
+    if (s->label_count == INFR_MAX_LABELS)
+        return 0;
+    s->seen_labels[s->label_count++] = label;
+    return 1;
+}
+
 int infr_add(infr_session_t *session, int label, const unsigned char *report, size_t report_len)
 {
     if (session == NULL || report == NULL || label < INFR_FREE)
         return INFR_ERR_ARG;
     if (report_len != session->report_len)
         return INFR_ERR_LEN;
-    if (session->count == session->max_samples)
+    if (session->count == session->max_samples || !infr_track_label(session, label))
         return INFR_ERR_FULL;
     memcpy(session->reports + session->count * session->report_len, report, report_len);
     session->labels[session->count++] = label;
@@ -120,7 +136,7 @@ int infr_set_usage(infr_session_t *session, int label, uint32_t usage_page, uint
 {
     size_t i;
 
-    if (session == NULL || label <= INFR_REST || usage_page > 0xffff || usage > 0xffff)
+    if (session == NULL || label <= INFR_REST || usage_page == 0 || usage_page > 0xffff || usage > 0xffff)
         return INFR_ERR_ARG;
     for (i = 0; i < session->hint_count; i++) {
         if (session->hints[i].label == label)

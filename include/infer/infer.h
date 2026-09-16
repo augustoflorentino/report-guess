@@ -57,6 +57,7 @@ extern "C" {
 #define INFR_CRC32 6u
 
 #define INFR_MAX_HINTS 64
+#define INFR_MAX_LABELS 64
 
 typedef struct infr_session infr_session_t;
 

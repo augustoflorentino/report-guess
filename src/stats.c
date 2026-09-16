@@ -2,7 +2,6 @@
 
 #include <string.h>
 
-#define INFR_LABEL_SLOTS 64
 #define INFR_COUNTER_MIN 4u
 
 const unsigned char *infr_sample(const infr_session_t *s, size_t index)
@@ -87,9 +86,9 @@ int infr_window_free(const infr_session_t *s, size_t bit_offset, unsigned bit_si
 }
 
 typedef struct {
-    int labels[INFR_LABEL_SLOTS];
-    uint64_t moves[INFR_LABEL_SLOTS];
-    uint32_t total[INFR_LABEL_SLOTS];
+    int labels[INFR_MAX_LABELS];
+    uint64_t moves[INFR_MAX_LABELS];
+    uint32_t total[INFR_MAX_LABELS];
     uint64_t rest_moves;
     uint32_t rest_total;
 } infr_label_stats_t;
@@ -98,7 +97,7 @@ static void infr_count_label(infr_label_stats_t *st, int label, uint32_t moved)
 {
     size_t i;
 
-    for (i = 0; i < INFR_LABEL_SLOTS; i++) {
+    for (i = 0; i < INFR_MAX_LABELS; i++) {
         if (st->total[i] == 0 || st->labels[i] == label) {
             st->labels[i] = label;
             st->total[i]++;
@@ -115,7 +114,7 @@ static double infr_rate(uint64_t moves, uint32_t total)
 
 static double infr_median_other(const infr_label_stats_t *st, size_t best, size_t used)
 {
-    double rates[INFR_LABEL_SLOTS + 1];
+    double rates[INFR_MAX_LABELS + 1];
     size_t n = 0;
     size_t i;
     size_t j;
@@ -142,7 +141,7 @@ static int infr_best_label(const infr_label_stats_t *st)
     size_t used = 0;
     size_t i;
 
-    while (used < INFR_LABEL_SLOTS && st->total[used] > 0)
+    while (used < INFR_MAX_LABELS && st->total[used] > 0)
         used++;
     for (i = 1; i < used; i++) {
         if (infr_rate(st->moves[i], st->total[i]) > infr_rate(st->moves[best], st->total[best]))

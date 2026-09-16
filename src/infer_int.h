@@ -38,6 +38,8 @@ struct infr_session {
     size_t rest_samples;
     size_t rest_transitions;
     infr_hint_t hints[INFR_MAX_HINTS];
+    int seen_labels[INFR_MAX_LABELS];
+    size_t label_count;
     size_t hint_count;
     int analyzed;
 };
