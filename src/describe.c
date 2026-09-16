@@ -147,6 +147,17 @@ static const infr_hint_t *infr_hint(const infr_session_t *s, int label)
     return NULL;
 }
 
+static int infr_hint_taken(const infr_session_t *s, uint32_t page, uint32_t usage)
+{
+    size_t i;
+
+    for (i = 0; i < s->hint_count; i++) {
+        if (s->hints[i].usage_page == page && s->hints[i].usage == usage)
+            return 1;
+    }
+    return 0;
+}
+
 static int infr_usage_taken(const infr_session_t *s, uint32_t page, uint32_t usage)
 {
     size_t i;
@@ -155,23 +166,23 @@ static int infr_usage_taken(const infr_session_t *s, uint32_t page, uint32_t usa
         if (s->fields[i].usage_page == page && s->fields[i].usage == usage)
             return 1;
     }
-    for (i = 0; i < s->hint_count; i++) {
-        if (s->hints[i].usage_page == page && s->hints[i].usage == usage)
-            return 1;
-    }
-    return 0;
+    return infr_hint_taken(s, page, usage);
 }
 
-static void infr_next_usage(const infr_session_t *s, infr_field_t *f)
+typedef struct {
+    uint32_t button;
+    uint32_t vendor;
+} infr_usage_cursor_t;
+
+static void infr_next_usage(const infr_session_t *s, infr_field_t *f, infr_usage_cursor_t *next)
 {
     size_t i;
-    uint32_t u;
 
     if (f->kind == INFR_BUTTON) {
-        for (u = 1; infr_usage_taken(s, 0x09, u); u++)
-            ;
+        while (infr_hint_taken(s, 0x09, next->button))
+            next->button++;
         f->usage_page = 0x09;
-        f->usage = u;
+        f->usage = next->button++;
         return;
     }
     for (i = 0; i < sizeof(infr_axis_usages) / sizeof(infr_axis_usages[0]); i++) {
@@ -181,14 +192,15 @@ static void infr_next_usage(const infr_session_t *s, infr_field_t *f)
             return;
         }
     }
-    for (u = 1; infr_usage_taken(s, 0xff00, u); u++)
-        ;
+    while (infr_hint_taken(s, 0xff00, next->vendor))
+        next->vendor++;
     f->usage_page = 0xff00;
-    f->usage = u;
+    f->usage = next->vendor++;
 }
 
 void infr_assign_usages(infr_session_t *s)
 {
+    infr_usage_cursor_t next = {1, 1};
     size_t i;
 
     for (i = 0; i < s->field_count; i++) {
@@ -209,6 +221,6 @@ void infr_assign_usages(infr_session_t *s)
         infr_field_t *f = &s->fields[i];
 
         if ((f->kind == INFR_BUTTON || f->kind == INFR_AXIS) && f->usage_page == 0)
-            infr_next_usage(s, f);
+            infr_next_usage(s, f, &next);
     }
 }
