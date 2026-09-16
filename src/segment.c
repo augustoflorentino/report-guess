@@ -183,7 +183,7 @@ static int infr_carries(const infr_session_t *s, size_t off, unsigned k)
         toggles++;
         carried += infr_raw(a, off, 3, 0) != infr_raw(b, off, 3, 0);
     }
-    return carried * 10 >= toggles * 8;
+    return carried * 10 + 20 >= toggles * 8;
 }
 
 static int infr_chain_ok(const infr_session_t *s, size_t off, unsigned w)

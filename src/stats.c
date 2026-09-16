@@ -327,14 +327,19 @@ static int infr_is_counter(const infr_session_t *s, size_t off, unsigned w, int3
     size_t i;
 
     memset(&c, 0, sizeof(c));
-    for (i = 1; i < s->count; i++)
+    for (i = 1; i < s->count; i++) {
         infr_counter_step(&c, infr_raw(infr_sample(s, i - 1), off, w, 0),
                           infr_raw(infr_sample(s, i), off, w, 0), w);
-    if (c.changed * 10 < transitions * 9 || c.forward * 20 < c.changed * 19 || c.gcd != 1)
+        if ((i - c.changed) * 10 > transitions || (c.changed - c.forward) * 20 > transitions)
+            return 0;
+    }
+    if (c.changed * 10 < transitions * 9 || c.forward * 20 < c.changed * 19)
         return 0;
     if (c.top_changes == 0 || c.top_carries * 10 < c.top_changes * 9)
         return 0;
     *out_step = c.step_hits * 10 >= c.forward * 9 ? (int32_t)c.step : 0;
+    if (c.gcd != 1 && (uint32_t)*out_step != c.gcd)
+        return 0;
     return infr_counter_carries(s, off, w, *out_step > 0 ? infr_bits_for((uint32_t)*out_step * 2) : 8);
 }
 
