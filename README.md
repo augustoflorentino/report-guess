@@ -71,6 +71,16 @@ Labels: `INFR_REST` (0) marks reports taken with the device untouched, `INFR_FRE
 of free use, and positive numbers one action each. A field moved by no particular action has
 label `INFR_NO_LABEL`.
 
+Limits:
+
+- at most `INFR_MAX_LABELS` (64) distinct positive labels per session; `infr_add` returns
+  `INFR_ERR_FULL` past that
+- at most `INFR_MAX_HINTS` usages set with `infr_set_usage`; usage page 0 is rejected
+- one checksum per report, which must be the last bytes it covers
+- hats use values 0 to 7 plus one rest value of 8 or 15
+- fields up to 32 bits; 32-bit axes are always signed
+- with a report ID, the first field must be the constant ID byte
+
 ## Validation
 
 `tests/data` holds labeled sessions and the expected analysis, checked by `ctest`:
@@ -83,6 +93,9 @@ label `INFR_NO_LABEL`.
 `tests/gen` regenerates them (`sony.py` needs hid-tools), `check.py` compares an analysis with
 the field layout taken from the device descriptor, and `decode.py` parses the emitted
 descriptor with hid-tools and checks it against the inferred fields.
+
+When hid-parser is found by CMake, `ctest` also parses every emitted descriptor with
+`hidp_desc_parse` in strict mode and checks each data field against the analysis.
 
 ## Versioning
 
