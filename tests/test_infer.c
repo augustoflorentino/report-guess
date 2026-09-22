@@ -47,8 +47,10 @@ static void failing_free(void *ctx, void *ptr)
 
 static unsigned synth_rand(synth_t *st, unsigned n)
 {
-    st->rng = st->rng * 1103515245u + 12345u;
-    return (st->rng >> 16) % n;
+    st->rng ^= st->rng << 13;
+    st->rng ^= st->rng >> 17;
+    st->rng ^= st->rng << 5;
+    return st->rng % n;
 }
 
 static unsigned synth_sum8(const unsigned char *r, size_t len)
@@ -280,6 +282,7 @@ static void test_report_id(void)
     CHECK(find_field(s, 0)->kind == INFR_CONSTANT && find_field(s, 0)->bit_size == 8);
     CHECK(infr_descriptor(s, 5, buf, sizeof(buf), &len) == INFR_OK);
     CHECK(buf[6] == 0x85 && buf[7] == 0x05);
+    CHECK(infr_descriptor(s, 9, buf, sizeof(buf), &len) == INFR_ERR_ARG);
     infr_destroy(s);
 }
 
@@ -358,6 +361,137 @@ static void test_checksums(void)
     check_algorithm(INFR_CRC32, 40);
 }
 
+static infr_session_t *walk_session(size_t len, void (*fill)(synth_t *, size_t, unsigned char *))
+{
+    unsigned char r[16];
+    infr_session_t *s = NULL;
+    synth_t st = {3, 0, 0, 0};
+    size_t i;
+
+    CHECK(infr_create(len, 600, NULL, NULL, NULL, &s) == INFR_OK);
+    for (i = 0; i < 600; i++) {
+        memset(r, 0, sizeof(r));
+        fill(&st, i, r);
+        CHECK(infr_add(s, i < 100 ? INFR_REST : INFR_FREE, r, len) == INFR_OK);
+    }
+    CHECK(infr_analyze(s) == INFR_OK);
+    return s;
+}
+
+static void fill_xor_tail(synth_t *st, size_t i, unsigned char *r)
+{
+    r[0] = 0x01;
+    r[1] = (unsigned char)(i >= 100 && i % 20 < 10);
+    st->angle = i < 100 ? 0 : (st->angle + 7) % 256;
+    r[2] = (unsigned char)st->angle;
+    r[3] = (unsigned char)(255 - st->angle / 2);
+    r[4] = (unsigned char)(r[0] ^ r[1] ^ r[2] ^ r[3]);
+}
+
+static void fill_twin_bytes(synth_t *st, size_t i, unsigned char *r)
+{
+    st->angle = i < 100 ? 128 : (st->angle + 5) % 256;
+    r[0] = (unsigned char)st->angle;
+    r[1] = r[0];
+}
+
+static void fill_wide(synth_t *st, size_t i, unsigned char *r)
+{
+    uint32_t v;
+
+    st->tilt += i < 100 ? 0 : (int)synth_rand(st, 2001) - 1000;
+    v = (uint32_t)st->tilt;
+    r[0] = (unsigned char)v;
+    r[1] = (unsigned char)(v >> 8);
+    r[2] = (unsigned char)(v >> 16);
+    r[3] = (unsigned char)(v >> 24);
+}
+
+static void fill_step3(synth_t *st, size_t i, unsigned char *r)
+{
+    (void)st;
+    r[0] = (unsigned char)(i * 3);
+    r[1] = 0x40;
+}
+
+static void test_checksum_false_positives(void)
+{
+    infr_session_t *s = walk_session(5, fill_xor_tail);
+    const infr_field_t *f = find_field(s, 32);
+
+    CHECK(f != NULL && f->kind == INFR_CHECKSUM && f->algorithm == INFR_XOR8);
+    CHECK(find_field(s, 8) != NULL && find_field(s, 8)->kind == INFR_BUTTON);
+    CHECK(find_field(s, 16) != NULL && find_field(s, 16)->kind == INFR_AXIS);
+    infr_destroy(s);
+    s = walk_session(2, fill_twin_bytes);
+    CHECK(find_field(s, 0)->kind == INFR_AXIS && find_field(s, 8)->kind == INFR_AXIS);
+    infr_destroy(s);
+}
+
+static void test_wide_axis(void)
+{
+    static const unsigned char range[] = {0x17, 0x00, 0x00, 0x00, 0x80, 0x27, 0xff, 0xff, 0xff, 0x7f};
+    unsigned char buf[128];
+    size_t len = 0;
+    infr_session_t *s = walk_session(4, fill_wide);
+    const infr_field_t *f = find_field(s, 0);
+
+    CHECK(f != NULL && f->kind == INFR_AXIS && f->bit_size == 32 && (f->flags & INFR_SIGNED));
+    CHECK(f->logical_min < 0 && f->logical_max > 0);
+    CHECK(infr_descriptor(s, 0, buf, sizeof(buf), &len) == INFR_OK);
+    CHECK(len > sizeof(range));
+    CHECK(memcmp(buf + 8, range, sizeof(range)) == 0);
+    infr_destroy(s);
+}
+
+static void test_counter_step(void)
+{
+    infr_session_t *s = walk_session(2, fill_step3);
+    const infr_field_t *f = find_field(s, 0);
+
+    CHECK(f != NULL && f->kind == INFR_COUNTER && f->bit_size == 8 && f->step == 3);
+    infr_destroy(s);
+}
+
+static void test_label_limit(void)
+{
+    static const unsigned char r[1] = {0};
+    infr_session_t *s = NULL;
+    int label;
+
+    CHECK(infr_create(1, 200, NULL, NULL, NULL, &s) == INFR_OK);
+    for (label = 1; label <= INFR_MAX_LABELS; label++)
+        CHECK(infr_add(s, label, r, 1) == INFR_OK);
+    CHECK(infr_add(s, INFR_MAX_LABELS + 1, r, 1) == INFR_ERR_FULL);
+    CHECK(infr_add(s, 1, r, 1) == INFR_OK);
+    CHECK(infr_add(s, INFR_REST, r, 1) == INFR_OK);
+    CHECK(infr_set_usage(s, 1, 0, 1) == INFR_ERR_ARG);
+    for (label = 1; label <= INFR_MAX_HINTS; label++)
+        CHECK(infr_set_usage(s, label, 0x09, (uint32_t)label) == INFR_OK);
+    CHECK(infr_set_usage(s, INFR_MAX_HINTS + 1, 0x09, 1) == INFR_ERR_FULL);
+    CHECK(infr_set_usage(s, 1, 0x09, 7) == INFR_OK);
+    infr_destroy(s);
+}
+
+static void test_hat_rest_15(void)
+{
+    unsigned char r[1];
+    infr_session_t *s = NULL;
+    size_t i;
+    int with_eight;
+
+    for (with_eight = 0; with_eight < 2; with_eight++) {
+        CHECK(infr_create(1, 300, NULL, NULL, NULL, &s) == INFR_OK);
+        for (i = 0; i < 300; i++) {
+            r[0] = (unsigned char)(i < 100 || i % 30 >= 20 ? 0x0f : (i / 30) % (8u + (unsigned)with_eight));
+            CHECK(infr_add(s, i < 100 ? INFR_REST : 1, r, 1) == INFR_OK);
+        }
+        CHECK(infr_analyze(s) == INFR_OK);
+        CHECK((find_field(s, 0)->kind == INFR_HAT) == !with_eight);
+        infr_destroy(s);
+    }
+}
+
 static void test_strerror(void)
 {
     int codes[] = {INFR_OK, INFR_ERR_ARG, INFR_ERR_NOMEM, INFR_ERR_LEN, INFR_ERR_FULL,
@@ -404,6 +538,11 @@ int main(void)
     test_descriptor();
     test_report_id();
     test_checksums();
+    test_checksum_false_positives();
+    test_wide_axis();
+    test_counter_step();
+    test_label_limit();
+    test_hat_rest_15();
     test_strerror();
     test_alloc_failure();
     return 0;
