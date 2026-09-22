@@ -52,10 +52,20 @@ if(INFER_BUILD_TESTS)
     add_test(NAME infer COMMAND test_infer)
     add_executable(infer_run tests/infer_run.c)
     target_link_libraries(infer_run PRIVATE infer)
-    foreach(set ds4-usb:0 ds4-bt:0 ds5-usb:0 ds5-bt:0 ninja-labeled:1 ninja-free:1)
+    find_package(hid-parser CONFIG QUIET)
+    if(hid-parser_FOUND)
+        add_executable(descriptor_check tests/descriptor_check.c)
+        target_link_libraries(descriptor_check PRIVATE hid-parser::hid-parser)
+    endif()
+    foreach(set ds4-usb:0:64 ds4-bt:0:78 ds5-usb:0:64 ds5-bt:0:78 ninja-labeled:1:10 ninja-free:1:10)
         string(REPLACE ":" ";" parts ${set})
         list(GET parts 0 name)
         list(GET parts 1 report_id)
+        list(GET parts 2 report_len)
+        if(hid-parser_FOUND)
+            add_test(NAME hid-parser_${name}
+                COMMAND descriptor_check ${PROJECT_SOURCE_DIR}/tests/data/${name}.expected ${report_id} ${report_len})
+        endif()
         add_test(NAME data_${name}
             COMMAND ${CMAKE_COMMAND} -DRUN=$<TARGET_FILE:infer_run> -DREPORT_ID=${report_id}
                 -DSAMPLES=${PROJECT_SOURCE_DIR}/tests/data/${name}.samples
