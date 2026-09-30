@@ -127,6 +127,7 @@ static int check(const hidp_desc_t *d, unsigned report_id, size_t report_len)
 
 int main(int argc, char **argv)
 {
+    hidp_parse_options_t strict = {HIDP_PARSE_STRICT, NULL, NULL, NULL};
     hidp_desc_t *d = NULL;
     size_t error_offset = 0;
     unsigned report_id;
@@ -139,7 +140,7 @@ int main(int argc, char **argv)
     }
     report_id = (unsigned)strtoul(argv[2], NULL, 0);
     report_len = (size_t)strtoul(argv[3], NULL, 0);
-    if (hidp_desc_parse(desc, desc_len, HIDP_PARSE_STRICT, NULL, NULL, NULL, &d, &error_offset) != HIDP_OK) {
+    if (hidp_desc_parse(desc, desc_len, &strict, &d, &error_offset) != HIDP_OK) {
         fprintf(stderr, "hidp_desc_parse failed at offset %zu\n", error_offset);
         return 1;
     }

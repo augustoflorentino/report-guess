@@ -106,6 +106,7 @@ static infr_session_t *load(FILE *f)
 
 static hidp_desc_t *describe(const infr_session_t *s, unsigned report_id)
 {
+    hidp_parse_options_t strict = {HIDP_PARSE_STRICT, NULL, NULL, NULL};
     static unsigned char desc[65536];
     hidp_desc_t *d = NULL;
     size_t len = 0;
@@ -113,7 +114,7 @@ static hidp_desc_t *describe(const infr_session_t *s, unsigned report_id)
 
     if (infr_descriptor(s, report_id, desc, sizeof(desc), &len) != INFR_OK)
         return NULL;
-    if (hidp_desc_parse(desc, len, HIDP_PARSE_STRICT, NULL, NULL, NULL, &d, &error_offset) != HIDP_OK)
+    if (hidp_desc_parse(desc, len, &strict, &d, &error_offset) != HIDP_OK)
         return NULL;
     return d;
 }
