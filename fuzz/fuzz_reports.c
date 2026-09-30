@@ -4,7 +4,7 @@
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    unsigned char out[64];
+    unsigned char out[512];
     unsigned char desc[4096];
     infr_session_t *s = NULL;
     size_t report_len;
@@ -13,7 +13,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
     if (size < 2)
         return 0;
-    report_len = (size_t)(data[0] % 32) + 1;
+    report_len = data[0] < 224 ? (size_t)(data[0] % 32) + 1 : (size_t)(data[0] - 224) * 8 + 33;
     if (infr_create(report_len, 512, NULL, NULL, NULL, &s) != INFR_OK)
         return 0;
     while (pos + 1 + report_len <= size) {
