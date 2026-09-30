@@ -65,11 +65,25 @@ Conventions:
 - every function that can fail returns `INFR_OK` or an error code; `infr_strerror` describes it
 - what `infr_create` returns is released only by `infr_destroy`, which accepts `NULL`
 - functions never take ownership of their arguments; returned pointers belong to the library
-- pass your own allocator to `infr_create`, or `NULL` for `malloc`/`free`
+- pass an `infr_options_t` with your allocator to `infr_create`, or `NULL` for `malloc`/`free`
 
 Labels: `INFR_REST` (0) marks reports taken with the device untouched, `INFR_FREE` (-1) reports
 of free use, and positive numbers one action each. A field moved by no particular action has
 label `INFR_NO_LABEL`.
+
+Fields (`infr_field_t`, layout fixed for the 1.x series):
+
+| member | meaning |
+|---|---|
+| `bit_offset`, `bit_size` | position in the report, bit 0 is the low bit of byte 0 |
+| `kind` | `INFR_CONSTANT`, `INFR_BUTTON`, `INFR_AXIS`, `INFR_HAT`, `INFR_COUNTER`, `INFR_CHECKSUM`, `INFR_NOISE` |
+| `flags` | `INFR_SIGNED`, `INFR_BIG_ENDIAN`, `INFR_ACTIVE_LOW` |
+| `logical_min`, `logical_max` | observed range; for hats the direction range; for counters the wrap value |
+| `rest`, `noise` | value at rest and its spread while untouched |
+| `label` | the action that moves the field, or `INFR_NO_LABEL` |
+| `usage_page`, `usage` | HID usage written to the descriptor |
+| `algorithm`, `covered_len`, `seed` | checksums: `INFR_SUM8` to `INFR_CRC32`, bytes covered from the start, crc32 seed byte or -1 |
+| `step` | counters: increment per report |
 
 Limits:
 
