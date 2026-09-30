@@ -64,6 +64,12 @@ typedef struct infr_session infr_session_t;
 typedef void *(*infr_alloc_fn)(void *ctx, size_t size);
 typedef void (*infr_free_fn)(void *ctx, void *ptr);
 
+typedef struct infr_options {
+    infr_alloc_fn alloc_fn;
+    infr_free_fn free_fn;
+    void *alloc_ctx;
+} infr_options_t;
+
 typedef struct infr_field {
     size_t bit_offset;
     unsigned bit_size;
@@ -82,8 +88,8 @@ typedef struct infr_field {
     int seed;
 } infr_field_t;
 
-INFR_API int infr_create(size_t report_len, size_t max_samples, infr_alloc_fn alloc_fn,
-                         infr_free_fn free_fn, void *alloc_ctx, infr_session_t **out_session);
+INFR_API int infr_create(size_t report_len, size_t max_samples, const infr_options_t *options,
+                         infr_session_t **out_session);
 INFR_API void infr_destroy(infr_session_t *session);
 INFR_API int infr_add(infr_session_t *session, int label, const unsigned char *report,
                       size_t report_len);
@@ -95,7 +101,7 @@ INFR_API const infr_field_t *infr_field(const infr_session_t *session, size_t in
 INFR_API int infr_normalize(const infr_session_t *session, const unsigned char *report,
                             size_t report_len, unsigned char *out, size_t out_len);
 INFR_API int infr_descriptor(const infr_session_t *session, unsigned report_id,
-                             unsigned char *buf, size_t buf_len, size_t *out_len);
+                             unsigned char *out, size_t out_len, size_t *out_written);
 INFR_API const char *infr_strerror(int status);
 
 #ifdef __cplusplus

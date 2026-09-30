@@ -21,7 +21,7 @@ int main(void)
     int status;
     int n;
 
-    status = infr_create(sizeof(report), 120, NULL, NULL, NULL, &s);
+    status = infr_create(sizeof(report), 120, NULL, &s);
     for (n = 0; status == INFR_OK && n < 120; n++) {
         make_report(n, report);
         status = infr_add(s, n < 20 || n >= 100 ? INFR_REST : n < 60 ? 1 : 2, report, sizeof(report));

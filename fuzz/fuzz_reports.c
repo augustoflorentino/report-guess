@@ -14,7 +14,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     if (size < 2)
         return 0;
     report_len = data[0] < 224 ? (size_t)(data[0] % 32) + 1 : (size_t)(data[0] - 224) * 8 + 33;
-    if (infr_create(report_len, 512, NULL, NULL, NULL, &s) != INFR_OK)
+    if (infr_create(report_len, 512, NULL, &s) != INFR_OK)
         return 0;
     while (pos + 1 + report_len <= size) {
         int label = (int)(data[pos] % 8) - 1;

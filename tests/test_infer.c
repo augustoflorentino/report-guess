@@ -98,7 +98,7 @@ static infr_session_t *synth_session(void)
     synth_t st = {1, 0, 0, 0};
     size_t i;
 
-    CHECK(infr_create(REPORT_LEN, SAMPLES, NULL, NULL, NULL, &s) == INFR_OK);
+    CHECK(infr_create(REPORT_LEN, SAMPLES, NULL, &s) == INFR_OK);
     for (i = 0; i < SAMPLES; i++) {
         int label = synth_report(&st, i, r);
 
@@ -120,13 +120,14 @@ static const infr_field_t *find_field(const infr_session_t *s, size_t bit_offset
 
 static void test_create(void)
 {
+    static const infr_options_t half = {failing_alloc, NULL, NULL};
     infr_session_t *s = NULL;
 
-    CHECK(infr_create(0, 10, NULL, NULL, NULL, &s) == INFR_ERR_ARG);
-    CHECK(infr_create(4, 1, NULL, NULL, NULL, &s) == INFR_ERR_ARG);
-    CHECK(infr_create(4, 10, failing_alloc, NULL, NULL, &s) == INFR_ERR_ARG);
-    CHECK(infr_create(4, 10, NULL, NULL, NULL, NULL) == INFR_ERR_ARG);
-    CHECK(infr_create(4, 10, NULL, NULL, NULL, &s) == INFR_OK);
+    CHECK(infr_create(0, 10, NULL, &s) == INFR_ERR_ARG);
+    CHECK(infr_create(4, 1, NULL, &s) == INFR_ERR_ARG);
+    CHECK(infr_create(4, 10, &half, &s) == INFR_ERR_ARG);
+    CHECK(infr_create(4, 10, NULL, NULL) == INFR_ERR_ARG);
+    CHECK(infr_create(4, 10, NULL, &s) == INFR_OK);
     CHECK(s != NULL);
     infr_destroy(s);
     infr_destroy(NULL);
@@ -137,7 +138,7 @@ static void test_add(void)
     static const unsigned char r[4] = {1, 2, 3, 4};
     infr_session_t *s = NULL;
 
-    CHECK(infr_create(4, 2, NULL, NULL, NULL, &s) == INFR_OK);
+    CHECK(infr_create(4, 2, NULL, &s) == INFR_OK);
     CHECK(infr_add(NULL, 0, r, 4) == INFR_ERR_ARG);
     CHECK(infr_add(s, 0, NULL, 4) == INFR_ERR_ARG);
     CHECK(infr_add(s, -3, r, 4) == INFR_ERR_ARG);
@@ -155,7 +156,7 @@ static void test_analyze(void)
     const infr_field_t *f;
 
     CHECK(infr_analyze(NULL) == INFR_ERR_ARG);
-    CHECK(infr_create(2, 4, NULL, NULL, NULL, &s) == INFR_OK);
+    CHECK(infr_create(2, 4, NULL, &s) == INFR_OK);
     CHECK(infr_add(s, 0, r, 2) == INFR_OK);
     CHECK(infr_analyze(s) == INFR_ERR_SAMPLES);
     infr_destroy(s);
@@ -271,7 +272,7 @@ static void test_report_id(void)
     infr_session_t *s = NULL;
     size_t i;
 
-    CHECK(infr_create(3, 200, NULL, NULL, NULL, &s) == INFR_OK);
+    CHECK(infr_create(3, 200, NULL, &s) == INFR_OK);
     for (i = 0; i < 200; i++) {
         r[0] = 0x05;
         r[1] = (unsigned char)(i % 20 < 10 ? 0x01 : 0x00);
@@ -340,7 +341,7 @@ static void check_algorithm(unsigned algorithm, size_t offset)
     size_t i;
     size_t j;
 
-    CHECK(infr_create(sizeof(r), 300, NULL, NULL, NULL, &s) == INFR_OK);
+    CHECK(infr_create(sizeof(r), 300, NULL, &s) == INFR_OK);
     for (i = 0; i < 300; i++) {
         memset(r, 0, sizeof(r));
         for (j = 0; j < 4; j++)
@@ -368,7 +369,7 @@ static infr_session_t *walk_session(size_t len, void (*fill)(synth_t *, size_t, 
     synth_t st = {3, 0, 0, 0};
     size_t i;
 
-    CHECK(infr_create(len, 600, NULL, NULL, NULL, &s) == INFR_OK);
+    CHECK(infr_create(len, 600, NULL, &s) == INFR_OK);
     for (i = 0; i < 600; i++) {
         memset(r, 0, sizeof(r));
         fill(&st, i, r);
@@ -459,7 +460,7 @@ static void test_label_limit(void)
     infr_session_t *s = NULL;
     int label;
 
-    CHECK(infr_create(1, 200, NULL, NULL, NULL, &s) == INFR_OK);
+    CHECK(infr_create(1, 200, NULL, &s) == INFR_OK);
     for (label = 1; label <= INFR_MAX_LABELS; label++)
         CHECK(infr_add(s, label, r, 1) == INFR_OK);
     CHECK(infr_add(s, INFR_MAX_LABELS + 1, r, 1) == INFR_ERR_FULL);
@@ -481,7 +482,7 @@ static void test_hat_rest_15(void)
     int with_eight;
 
     for (with_eight = 0; with_eight < 2; with_eight++) {
-        CHECK(infr_create(1, 300, NULL, NULL, NULL, &s) == INFR_OK);
+        CHECK(infr_create(1, 300, NULL, &s) == INFR_OK);
         for (i = 0; i < 300; i++) {
             r[0] = (unsigned char)(i < 100 || i % 30 >= 20 ? 0x0f : (i / 30) % (8u + (unsigned)with_eight));
             CHECK(infr_add(s, i < 100 ? INFR_REST : 1, r, 1) == INFR_OK);
@@ -510,8 +511,12 @@ static void test_alloc_failure(void)
 
     for (n = 0;; n++) {
         failing_alloc_t fa = {n, 0};
+        infr_options_t options = {failing_alloc, failing_free, NULL};
         infr_session_t *s = NULL;
-        int status = infr_create(4, 8, failing_alloc, failing_free, &fa, &s);
+        int status;
+
+        options.alloc_ctx = &fa;
+        status = infr_create(4, 8, &options, &s);
 
         if (status == INFR_OK) {
             CHECK(infr_add(s, 0, r, 4) == INFR_OK);

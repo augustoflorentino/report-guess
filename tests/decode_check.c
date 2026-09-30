@@ -93,7 +93,7 @@ static infr_session_t *load(FILE *f)
         if (line[0] == '#' || sscanf(line, "%d %16383s", &label, hex) != 2)
             continue;
         len = parse_hex(hex, report, sizeof(report));
-        if (s == NULL && infr_create(len, 100000, NULL, NULL, NULL, &s) != INFR_OK)
+        if (s == NULL && infr_create(len, 100000, NULL, &s) != INFR_OK)
             return NULL;
         if (infr_add(s, label, report, len) != INFR_OK)
             break;

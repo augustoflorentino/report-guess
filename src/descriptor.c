@@ -146,20 +146,20 @@ static int infr_starts_with_id(const infr_session_t *s, unsigned report_id)
     return f != NULL && f->kind == INFR_CONSTANT && f->bit_size == 8 && f->rest == (int32_t)report_id;
 }
 
-int infr_descriptor(const infr_session_t *session, unsigned report_id, unsigned char *buf,
-                    size_t buf_len, size_t *out_len)
+int infr_descriptor(const infr_session_t *session, unsigned report_id, unsigned char *out,
+                    size_t out_len, size_t *out_written)
 {
     infr_writer_t w;
 
-    if (session == NULL || out_len == NULL || (buf == NULL && buf_len > 0) || report_id > 255)
+    if (session == NULL || out_written == NULL || (out == NULL && out_len > 0) || report_id > 255)
         return INFR_ERR_ARG;
-    *out_len = 0;
+    *out_written = 0;
     if (!session->analyzed)
         return INFR_ERR_STATE;
     if (report_id != 0 && !infr_starts_with_id(session, report_id))
         return INFR_ERR_ARG;
-    w.buf = buf;
-    w.cap = buf_len;
+    w.buf = out;
+    w.cap = out_len;
     w.len = 0;
     w.page = 0x01;
     w.padding = 0;
@@ -171,6 +171,6 @@ int infr_descriptor(const infr_session_t *session, unsigned report_id, unsigned 
         infr_item(&w, INFR_TYPE_GLOBAL, 0x8, report_id, 1);
     infr_write_body(&w, session, report_id != 0 ? 8 : 0);
     infr_item(&w, INFR_TYPE_MAIN, 0xc, 0, 0);
-    *out_len = w.len;
-    return w.len <= buf_len ? INFR_OK : INFR_ERR_SPACE;
+    *out_written = w.len;
+    return w.len <= out_len ? INFR_OK : INFR_ERR_SPACE;
 }

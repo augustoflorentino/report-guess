@@ -55,9 +55,12 @@ static int infr_alloc_arrays(infr_session_t *s)
     return failed ? INFR_ERR_NOMEM : INFR_OK;
 }
 
-int infr_create(size_t report_len, size_t max_samples, infr_alloc_fn alloc_fn,
-                infr_free_fn free_fn, void *alloc_ctx, infr_session_t **out_session)
+int infr_create(size_t report_len, size_t max_samples, const infr_options_t *options,
+                infr_session_t **out_session)
 {
+    infr_alloc_fn alloc_fn = options != NULL ? options->alloc_fn : NULL;
+    infr_free_fn free_fn = options != NULL ? options->free_fn : NULL;
+    void *alloc_ctx = options != NULL ? options->alloc_ctx : NULL;
     infr_session_t *s;
 
     if (out_session == NULL || (alloc_fn == NULL) != (free_fn == NULL))

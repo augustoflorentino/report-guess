@@ -34,7 +34,7 @@ static int load(FILE *f, infr_session_t **out, size_t max_samples)
         if (line[0] == '#' || sscanf(line, "%d %16383s", &label, hex) != 2)
             continue;
         len = parse_hex(hex, report, sizeof(report));
-        if (s == NULL && infr_create(len, max_samples, NULL, NULL, NULL, &s) != INFR_OK)
+        if (s == NULL && infr_create(len, max_samples, NULL, &s) != INFR_OK)
             return 0;
         if (infr_add(s, label, report, len) != INFR_OK)
             return 0;

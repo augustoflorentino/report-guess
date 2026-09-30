@@ -10,7 +10,7 @@ int main(void)
     int status;
     int i;
 
-    status = infr_create(sizeof(report), 64, NULL, NULL, NULL, &s);
+    status = infr_create(sizeof(report), 64, NULL, &s);
     for (i = 0; status == INFR_OK && i < 64; i++) {
         report[0] = (unsigned char)(i % 8 < 4);
         report[1] = (unsigned char)(i * 4);
