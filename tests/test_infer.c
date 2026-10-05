@@ -120,12 +120,14 @@ static const infr_field_t *find_field(const infr_session_t *s, size_t bit_offset
 
 static void test_create(void)
 {
-    static const infr_options_t half = {failing_alloc, NULL, NULL};
+    static const infr_options_t half = {0, failing_alloc, NULL, NULL};
+    static const infr_options_t unknown = {0x80, NULL, NULL, NULL};
     infr_session_t *s = NULL;
 
     CHECK(infr_create(0, 10, NULL, &s) == INFR_ERR_ARG);
     CHECK(infr_create(4, 1, NULL, &s) == INFR_ERR_ARG);
     CHECK(infr_create(4, 10, &half, &s) == INFR_ERR_ARG);
+    CHECK(infr_create(4, 10, &unknown, &s) == INFR_ERR_ARG);
     CHECK(infr_create(4, 10, NULL, NULL) == INFR_ERR_ARG);
     CHECK(infr_create(4, 10, NULL, &s) == INFR_OK);
     CHECK(s != NULL);
@@ -259,40 +261,67 @@ static void test_descriptor(void)
     size_t need = 0;
     infr_session_t *s = synth_session();
 
-    CHECK(infr_descriptor(s, 0, buf, sizeof(buf), &len) == INFR_ERR_STATE);
+    CHECK(infr_descriptor(s, buf, sizeof(buf), &len) == INFR_ERR_STATE);
     CHECK(infr_analyze(s) == INFR_OK);
-    CHECK(infr_descriptor(NULL, 0, buf, sizeof(buf), &len) == INFR_ERR_ARG);
-    CHECK(infr_descriptor(s, 0, NULL, 4, &len) == INFR_ERR_ARG);
-    CHECK(infr_descriptor(s, 256, buf, sizeof(buf), &len) == INFR_ERR_ARG);
-    CHECK(infr_descriptor(s, 1, buf, sizeof(buf), &len) == INFR_ERR_ARG);
-    CHECK(infr_descriptor(s, 0, NULL, 0, &need) == INFR_ERR_SPACE);
+    CHECK(infr_descriptor(NULL, buf, sizeof(buf), &len) == INFR_ERR_ARG);
+    CHECK(infr_descriptor(s, NULL, 4, &len) == INFR_ERR_ARG);
+    CHECK(infr_descriptor(s, NULL, 0, &need) == INFR_ERR_SPACE);
     CHECK(need > sizeof(head));
-    CHECK(infr_descriptor(s, 0, buf, need - 1, &len) == INFR_ERR_SPACE && len == need);
-    CHECK(infr_descriptor(s, 0, buf, sizeof(buf), &len) == INFR_OK && len == need);
+    CHECK(infr_descriptor(s, buf, need - 1, &len) == INFR_ERR_SPACE && len == need);
+    CHECK(infr_descriptor(s, buf, sizeof(buf), &len) == INFR_OK && len == need);
     CHECK(memcmp(buf, head, sizeof(head)) == 0 && buf[len - 1] == 0xc0);
     infr_destroy(s);
 }
 
+static void add_two_reports(infr_session_t *s, size_t i)
+{
+    unsigned char a[3];
+    unsigned char b[2];
+
+    a[0] = 0x05;
+    a[1] = (unsigned char)(i % 20 < 10 ? 0x01 : 0x00);
+    a[2] = (unsigned char)(128 + (int)(i % 50) - 25);
+    b[0] = 0x07;
+    b[1] = (unsigned char)(i % 30 < 15 ? 0x02 : 0x00);
+    CHECK(infr_add(s, i < 40 ? INFR_REST : INFR_FREE, a, 3) == INFR_OK);
+    CHECK(infr_add(s, i < 40 ? INFR_REST : INFR_FREE, b, 2) == INFR_OK);
+}
+
 static void test_report_id(void)
 {
-    unsigned char r[3];
+    static const unsigned char bad_len[2] = {0x05, 0};
+    static const unsigned char zero[2] = {0x00, 0};
+    static const unsigned char other[2] = {0x09, 0};
+    static const infr_options_t ids = {INFR_REPORT_IDS, NULL, NULL, NULL};
     unsigned char buf[256];
+    unsigned char out[3];
     size_t len = 0;
     infr_session_t *s = NULL;
     size_t i;
 
-    CHECK(infr_create(3, 200, NULL, &s) == INFR_OK);
-    for (i = 0; i < 200; i++) {
-        r[0] = 0x05;
-        r[1] = (unsigned char)(i % 20 < 10 ? 0x01 : 0x00);
-        r[2] = (unsigned char)(128 + (int)(i % 50) - 25);
-        CHECK(infr_add(s, i < 40 ? INFR_REST : INFR_FREE, r, 3) == INFR_OK);
-    }
+    CHECK(infr_create(3, 200, &ids, &s) == INFR_OK);
+    CHECK(infr_analyze(s) == INFR_ERR_SAMPLES);
+    for (i = 0; i < 200; i++)
+        add_two_reports(s, i);
+    CHECK(infr_add(s, INFR_FREE, bad_len, 2) == INFR_ERR_LEN);
+    CHECK(infr_add(s, INFR_FREE, zero, 2) == INFR_ERR_ARG);
+    CHECK(infr_add(s, INFR_FREE, buf, 4) == INFR_ERR_LEN);
     CHECK(infr_analyze(s) == INFR_OK);
-    CHECK(find_field(s, 0)->kind == INFR_CONSTANT && find_field(s, 0)->bit_size == 8);
-    CHECK(infr_descriptor(s, 5, buf, sizeof(buf), &len) == INFR_OK);
+    CHECK(infr_field(s, 0)->report_id == 5 && infr_field(s, 0)->kind == INFR_CONSTANT);
+    CHECK(infr_field(s, infr_field_count(s) - 1)->report_id == 7);
+    CHECK(infr_descriptor(s, buf, sizeof(buf), &len) == INFR_OK);
     CHECK(buf[6] == 0x85 && buf[7] == 0x05);
-    CHECK(infr_descriptor(s, 9, buf, sizeof(buf), &len) == INFR_ERR_ARG);
+    CHECK(memchr(buf + 8, 0x85, len - 8) != NULL && ((unsigned char *)memchr(buf + 8, 0x85, len - 8))[1] == 0x07);
+    CHECK(infr_normalize(s, other, 2, out, sizeof(out)) == INFR_ERR_LEN);
+    CHECK(infr_normalize(s, bad_len, 2, out, sizeof(out)) == INFR_ERR_LEN);
+    CHECK(infr_add(s, INFR_FREE, other, 2) == INFR_OK);
+    CHECK(infr_analyze(s) == INFR_ERR_SAMPLES);
+    for (i = 10; i < 10 + INFR_MAX_REPORTS - 3; i++) {
+        buf[0] = (unsigned char)i;
+        CHECK(infr_add(s, INFR_FREE, buf, 1) == INFR_OK);
+    }
+    buf[0] = 0xff;
+    CHECK(infr_add(s, INFR_FREE, buf, 1) == INFR_ERR_FULL);
     infr_destroy(s);
 }
 
@@ -448,7 +477,7 @@ static void test_wide_axis(void)
 
     CHECK(f != NULL && f->kind == INFR_AXIS && f->bit_size == 32 && (f->flags & INFR_SIGNED));
     CHECK(f->logical_min < 0 && f->logical_max > 0);
-    CHECK(infr_descriptor(s, 0, buf, sizeof(buf), &len) == INFR_OK);
+    CHECK(infr_descriptor(s, buf, sizeof(buf), &len) == INFR_OK);
     CHECK(len > sizeof(range));
     CHECK(memcmp(buf + 8, range, sizeof(range)) == 0);
     infr_destroy(s);
@@ -520,7 +549,7 @@ static void test_alloc_failure(void)
 
     for (n = 0;; n++) {
         failing_alloc_t fa = {n, 0};
-        infr_options_t options = {failing_alloc, failing_free, NULL};
+        infr_options_t options = {0, failing_alloc, failing_free, NULL};
         infr_session_t *s = NULL;
         int status;
 

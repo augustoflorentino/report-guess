@@ -125,7 +125,7 @@ static void infr_write_field(infr_writer_t *w, const infr_field_t *f)
     }
 }
 
-static void infr_write_body(infr_writer_t *w, const infr_session_t *s, size_t start_bit)
+static void infr_write_body(infr_writer_t *w, const infr_layout_t *s, size_t start_bit)
 {
     size_t i;
 
@@ -139,25 +139,23 @@ static void infr_write_body(infr_writer_t *w, const infr_session_t *s, size_t st
     infr_flush_padding(w);
 }
 
-static int infr_starts_with_id(const infr_session_t *s, unsigned report_id)
+static void infr_write_report(infr_writer_t *w, const infr_layout_t *l, int with_id)
 {
-    const infr_field_t *f = s->field_count > 0 ? &s->fields[0] : NULL;
-
-    return f != NULL && f->kind == INFR_CONSTANT && f->bit_size == 8 && f->rest == (int32_t)report_id;
+    if (with_id)
+        infr_item(w, INFR_TYPE_GLOBAL, 0x8, l->report_id, 1);
+    infr_write_body(w, l, with_id ? 8 : 0);
 }
 
-int infr_descriptor(const infr_session_t *session, unsigned report_id, unsigned char *out,
-                    size_t out_len, size_t *out_written)
+int infr_descriptor(const infr_session_t *session, unsigned char *out, size_t out_len, size_t *out_written)
 {
     infr_writer_t w;
+    size_t i;
 
-    if (session == NULL || out_written == NULL || (out == NULL && out_len > 0) || report_id > 255)
+    if (session == NULL || out_written == NULL || (out == NULL && out_len > 0))
         return INFR_ERR_ARG;
     *out_written = 0;
     if (!session->analyzed)
         return INFR_ERR_STATE;
-    if (report_id != 0 && !infr_starts_with_id(session, report_id))
-        return INFR_ERR_ARG;
     w.buf = out;
     w.cap = out_len;
     w.len = 0;
@@ -167,9 +165,8 @@ int infr_descriptor(const infr_session_t *session, unsigned report_id, unsigned 
     infr_item(&w, INFR_TYPE_GLOBAL, 0x0, 0x01, 1);
     infr_item(&w, INFR_TYPE_LOCAL, 0x0, 0x05, 1);
     infr_item(&w, INFR_TYPE_MAIN, 0xa, 0x01, 1);
-    if (report_id != 0)
-        infr_item(&w, INFR_TYPE_GLOBAL, 0x8, report_id, 1);
-    infr_write_body(&w, session, report_id != 0 ? 8 : 0);
+    for (i = 0; i < session->layout_count; i++)
+        infr_write_report(&w, session->layouts[i], (session->flags & INFR_REPORT_IDS) != 0);
     infr_item(&w, INFR_TYPE_MAIN, 0xc, 0, 0);
     *out_written = w.len;
     return w.len <= out_len ? INFR_OK : INFR_ERR_SPACE;

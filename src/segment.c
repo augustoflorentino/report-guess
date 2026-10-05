@@ -14,7 +14,7 @@ static uint32_t infr_absdiff(uint32_t a, uint32_t b)
     return a > b ? a - b : b - a;
 }
 
-static size_t infr_wrap_ratio(const infr_session_t *s, size_t trigger_bit, size_t off, unsigned w,
+static size_t infr_wrap_ratio(const infr_layout_t *s, size_t trigger_bit, size_t off, unsigned w,
                               int big_endian, size_t *out_total)
 {
     size_t i;
@@ -35,12 +35,12 @@ static size_t infr_wrap_ratio(const infr_session_t *s, size_t trigger_bit, size_
     return wraps;
 }
 
-static int infr_byte_free(const infr_session_t *s, size_t byte)
+static int infr_byte_free(const infr_layout_t *s, size_t byte)
 {
     return infr_window_free(s, byte * 8, 8);
 }
 
-static int infr_is_big_endian_pair(const infr_session_t *s, size_t hi)
+static int infr_is_big_endian_pair(const infr_layout_t *s, size_t hi)
 {
     size_t total = 0;
     size_t be_wraps;
@@ -58,7 +58,7 @@ static int infr_is_big_endian_pair(const infr_session_t *s, size_t hi)
     return le_total == 0 || le_wraps * 10 < le_total * 3;
 }
 
-void infr_find_big_endian(infr_session_t *s)
+void infr_find_big_endian(infr_layout_t *s)
 {
     size_t hi;
 
@@ -99,7 +99,7 @@ static int infr_hat_shape(const unsigned char *seen, uint32_t rest)
     return directions >= 5;
 }
 
-static int infr_is_hat(const infr_session_t *s, size_t off)
+static int infr_is_hat(const infr_layout_t *s, size_t off)
 {
     unsigned char seen[INFR_HAT_VALUES];
     unsigned varying = 0;
@@ -118,7 +118,7 @@ static int infr_is_hat(const infr_session_t *s, size_t off)
     return infr_hat_shape(seen, infr_rest_raw(s, off, 4));
 }
 
-void infr_find_hats(infr_session_t *s)
+void infr_find_hats(infr_layout_t *s)
 {
     size_t off;
 
@@ -132,7 +132,7 @@ void infr_find_hats(infr_session_t *s)
     }
 }
 
-static int infr_top_smooth(const infr_session_t *s, size_t off, unsigned w)
+static int infr_top_smooth(const infr_layout_t *s, size_t off, unsigned w)
 {
     size_t top = off + w - 1;
     size_t allowed = s->bit_changes[top] / 10;
@@ -158,7 +158,7 @@ static int infr_top_smooth(const infr_session_t *s, size_t off, unsigned w)
     return 1;
 }
 
-static unsigned infr_free_run(const infr_session_t *s, size_t off)
+static unsigned infr_free_run(const infr_layout_t *s, size_t off)
 {
     unsigned w = 0;
 
@@ -168,7 +168,7 @@ static unsigned infr_free_run(const infr_session_t *s, size_t off)
     return w;
 }
 
-static int infr_carries(const infr_session_t *s, size_t off, unsigned k)
+static int infr_carries(const infr_layout_t *s, size_t off, unsigned k)
 {
     size_t toggles = 0;
     size_t carried = 0;
@@ -186,7 +186,7 @@ static int infr_carries(const infr_session_t *s, size_t off, unsigned k)
     return carried * 10 + 20 >= toggles * 8;
 }
 
-static int infr_chain_ok(const infr_session_t *s, size_t off, unsigned w)
+static int infr_chain_ok(const infr_layout_t *s, size_t off, unsigned w)
 {
     unsigned k;
 
@@ -199,7 +199,7 @@ static int infr_chain_ok(const infr_session_t *s, size_t off, unsigned w)
     return 1;
 }
 
-static unsigned infr_chain_width(const infr_session_t *s, size_t off)
+static unsigned infr_chain_width(const infr_layout_t *s, size_t off)
 {
     unsigned w;
 
@@ -210,7 +210,7 @@ static unsigned infr_chain_width(const infr_session_t *s, size_t off)
     return 1;
 }
 
-void infr_find_chains(infr_session_t *s)
+void infr_find_chains(infr_layout_t *s)
 {
     size_t off;
 

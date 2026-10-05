@@ -4,7 +4,7 @@
 
 #define INFR_COUNTER_MIN 4u
 
-const unsigned char *infr_sample(const infr_session_t *s, size_t index)
+const unsigned char *infr_sample(const infr_layout_t *s, size_t index)
 {
     return s->reports + index * s->report_len;
 }
@@ -49,14 +49,14 @@ int32_t infr_value(const infr_field_t *field, const unsigned char *report)
     return (int32_t)((int64_t)(raw ^ sign) - (int64_t)sign);
 }
 
-int infr_transition_label(const infr_session_t *s, size_t index)
+int infr_transition_label(const infr_layout_t *s, size_t index)
 {
     int a = s->labels[index - 1];
 
     return a == s->labels[index] ? a : INFR_FREE;
 }
 
-infr_field_t *infr_new_field(infr_session_t *s, size_t bit_offset, unsigned bit_size, unsigned kind)
+infr_field_t *infr_new_field(infr_layout_t *s, size_t bit_offset, unsigned bit_size, unsigned kind)
 {
     infr_field_t *f = &s->fields[s->field_count++];
     unsigned i;
@@ -72,7 +72,7 @@ infr_field_t *infr_new_field(infr_session_t *s, size_t bit_offset, unsigned bit_
     return f;
 }
 
-int infr_window_free(const infr_session_t *s, size_t bit_offset, unsigned bit_size)
+int infr_window_free(const infr_layout_t *s, size_t bit_offset, unsigned bit_size)
 {
     unsigned i;
 
@@ -154,7 +154,7 @@ static int infr_best_label(const infr_label_stats_t *st)
     return st->labels[best];
 }
 
-int infr_field_label(const infr_session_t *s, const infr_field_t *field)
+int infr_field_label(const infr_layout_t *s, const infr_field_t *field)
 {
     infr_label_stats_t st;
     size_t i;
@@ -179,7 +179,7 @@ int infr_field_label(const infr_session_t *s, const infr_field_t *field)
     return infr_best_label(&st);
 }
 
-static void infr_count_transition(infr_session_t *s, size_t index)
+static void infr_count_transition(infr_layout_t *s, size_t index)
 {
     const unsigned char *prev = infr_sample(s, index - 1);
     const unsigned char *cur = infr_sample(s, index);
@@ -196,7 +196,7 @@ static void infr_count_transition(infr_session_t *s, size_t index)
     s->rest_transitions += (size_t)rest;
 }
 
-static void infr_count_rest(infr_session_t *s, size_t index)
+static void infr_count_rest(infr_layout_t *s, size_t index)
 {
     const unsigned char *r = infr_sample(s, index);
     size_t b;
@@ -208,7 +208,7 @@ static void infr_count_rest(infr_session_t *s, size_t index)
         s->bit_rest_ones[b] += (uint32_t)infr_bit(r, b);
 }
 
-static void infr_bit_labels(infr_session_t *s)
+static void infr_bit_labels(infr_layout_t *s)
 {
     infr_field_t one;
     size_t b;
@@ -221,7 +221,7 @@ static void infr_bit_labels(infr_session_t *s)
     }
 }
 
-void infr_collect_stats(infr_session_t *s)
+void infr_collect_stats(infr_layout_t *s)
 {
     size_t i;
     size_t bytes = s->bits * sizeof(uint32_t);
@@ -282,7 +282,7 @@ static void infr_counter_step(infr_counter_stats_t *c, uint32_t prev, uint32_t c
     c->step_hits += delta == c->step;
 }
 
-static int infr_counter_carries(const infr_session_t *s, size_t off, unsigned w, unsigned first)
+static int infr_counter_carries(const infr_layout_t *s, size_t off, unsigned w, unsigned first)
 {
     size_t toggles[32];
     size_t carries[32];
@@ -320,7 +320,7 @@ static unsigned infr_bits_for(uint32_t v)
     return n;
 }
 
-static int infr_is_counter(const infr_session_t *s, size_t off, unsigned w, int32_t *out_step)
+static int infr_is_counter(const infr_layout_t *s, size_t off, unsigned w, int32_t *out_step)
 {
     infr_counter_stats_t c;
     size_t transitions = s->count - 1;
@@ -343,7 +343,7 @@ static int infr_is_counter(const infr_session_t *s, size_t off, unsigned w, int3
     return infr_counter_carries(s, off, w, *out_step > 0 ? infr_bits_for((uint32_t)*out_step * 2) : 8);
 }
 
-static unsigned infr_counter_at(const infr_session_t *s, size_t off, int32_t *out_step)
+static unsigned infr_counter_at(const infr_layout_t *s, size_t off, int32_t *out_step)
 {
     unsigned w;
     unsigned max = s->bits - off < 32 ? (unsigned)(s->bits - off) : 32;
@@ -359,7 +359,7 @@ static unsigned infr_counter_at(const infr_session_t *s, size_t off, int32_t *ou
     return 0;
 }
 
-void infr_find_counters(infr_session_t *s)
+void infr_find_counters(infr_layout_t *s)
 {
     size_t off;
 
@@ -380,14 +380,14 @@ void infr_find_counters(infr_session_t *s)
     }
 }
 
-static int infr_rest_bit(const infr_session_t *s, size_t bit)
+static int infr_rest_bit(const infr_layout_t *s, size_t bit)
 {
     if (s->rest_samples > 0)
         return s->bit_rest_ones[bit] * 2 > s->rest_samples;
     return infr_bit(infr_sample(s, 0), bit);
 }
 
-uint32_t infr_rest_raw(const infr_session_t *s, size_t off, unsigned w)
+uint32_t infr_rest_raw(const infr_layout_t *s, size_t off, unsigned w)
 {
     uint32_t v = 0;
     unsigned i;
@@ -397,7 +397,7 @@ uint32_t infr_rest_raw(const infr_session_t *s, size_t off, unsigned w)
     return v;
 }
 
-int infr_noise_bit(const infr_session_t *s, size_t bit)
+int infr_noise_bit(const infr_layout_t *s, size_t bit)
 {
     size_t total = s->count - 1;
 

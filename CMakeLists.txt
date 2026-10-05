@@ -8,7 +8,7 @@ option(INFER_BUILD_FUZZ "Build libFuzzer targets" OFF)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
-add_library(infer src/session.c src/stats.c src/checksum.c src/segment.c src/describe.c src/descriptor.c)
+add_library(infer src/infer.c src/session.c src/stats.c src/checksum.c src/segment.c src/describe.c src/descriptor.c)
 add_library(infer::infer ALIAS infer)
 target_include_directories(infer PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>

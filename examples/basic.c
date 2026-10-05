@@ -31,7 +31,7 @@ int main(void)
     if (status == INFR_OK)
         status = infr_analyze(s);
     if (status == INFR_OK)
-        status = infr_descriptor(s, 0, desc, sizeof(desc), &len);
+        status = infr_descriptor(s, desc, sizeof(desc), &len);
     if (status != INFR_OK) {
         fprintf(stderr, "error: %s\n", infr_strerror(status));
         infr_destroy(s);

@@ -20,7 +20,7 @@ static size_t parse_hex(const char *text, unsigned char *out, size_t cap)
     return n;
 }
 
-static int load(FILE *f, infr_session_t **out, size_t max_samples)
+static int load(FILE *f, infr_session_t **out, size_t max_samples, const infr_options_t *options)
 {
     static char line[MAX_LINE];
     static unsigned char report[MAX_LINE / 2];
@@ -34,7 +34,7 @@ static int load(FILE *f, infr_session_t **out, size_t max_samples)
         if (line[0] == '#' || sscanf(line, "%d %16383s", &label, hex) != 2)
             continue;
         len = parse_hex(hex, report, sizeof(report));
-        if (s == NULL && infr_create(len, max_samples, NULL, &s) != INFR_OK)
+        if (s == NULL && infr_create(len, max_samples, options, &s) != INFR_OK)
             return 0;
         if (infr_add(s, label, report, len) != INFR_OK)
             return 0;
@@ -68,20 +68,22 @@ int main(int argc, char **argv)
 {
     static unsigned char desc[65536];
     infr_session_t *s = NULL;
-    unsigned report_id = argc > 2 ? (unsigned)strtoul(argv[2], NULL, 0) : 0;
+    infr_options_t options = {0, NULL, NULL, NULL};
     FILE *f = argc > 1 ? fopen(argv[1], "r") : NULL;
     size_t i;
     size_t len = 0;
     int status;
 
-    if (f == NULL || !load(f, &s, 1u << 20)) {
+    if (argc > 2 && strtoul(argv[2], NULL, 0) != 0)
+        options.flags = INFR_REPORT_IDS;
+    if (f == NULL || !load(f, &s, 1u << 20, &options)) {
         fprintf(stderr, "usage: infer_run <samples> [report_id]\n");
         return 2;
     }
     fclose(f);
     status = infr_analyze(s);
     if (status == INFR_OK)
-        status = infr_descriptor(s, report_id, desc, sizeof(desc), &len);
+        status = infr_descriptor(s, desc, sizeof(desc), &len);
     if (status != INFR_OK) {
         fprintf(stderr, "error: %s\n", infr_strerror(status));
         infr_destroy(s);

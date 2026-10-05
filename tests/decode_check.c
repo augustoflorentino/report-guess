@@ -54,12 +54,12 @@ static int32_t expected_value(const unsigned char *r, const infr_field_t *f)
     return (int32_t)((int64_t)(v ^ sign) - (int64_t)sign);
 }
 
-static const infr_field_t *field_at(const infr_session_t *s, size_t bit_offset)
+static const infr_field_t *field_at(const infr_session_t *s, unsigned report_id, size_t bit_offset)
 {
     size_t i;
 
     for (i = 0; i < infr_field_count(s); i++) {
-        if (infr_field(s, i)->bit_offset == bit_offset)
+        if (infr_field(s, i)->report_id == report_id && infr_field(s, i)->bit_offset == bit_offset)
             return infr_field(s, i);
     }
     return NULL;
@@ -68,7 +68,7 @@ static const infr_field_t *field_at(const infr_session_t *s, size_t bit_offset)
 static int on_value(void *opaque, const hidp_value_t *v)
 {
     decode_ctx_t *c = opaque;
-    const infr_field_t *f = field_at(c->session, v->field->bit_offset);
+    const infr_field_t *f = field_at(c->session, v->field->report_id, v->field->bit_offset);
 
     if (f == NULL || (int64_t)expected_value(c->raw, f) != v->value) {
         fprintf(stderr, "bit %zu decoded %lld\n", v->field->bit_offset, (long long)v->value);
@@ -79,21 +79,23 @@ static int on_value(void *opaque, const hidp_value_t *v)
     return 0;
 }
 
-static infr_session_t *load(FILE *f)
+static infr_session_t *load(FILE *f, unsigned flags)
 {
     static char line[MAX_LINE];
     static char hex[MAX_LINE];
     static unsigned char report[MAX_REPORT];
+    infr_options_t options = {0, NULL, NULL, NULL};
     infr_session_t *s = NULL;
     int label;
 
+    options.flags = flags;
     while (fgets(line, sizeof(line), f) != NULL) {
         size_t len;
 
         if (line[0] == '#' || sscanf(line, "%d %16383s", &label, hex) != 2)
             continue;
         len = parse_hex(hex, report, sizeof(report));
-        if (s == NULL && infr_create(len, 100000, NULL, &s) != INFR_OK)
+        if (s == NULL && infr_create(len, 100000, &options, &s) != INFR_OK)
             return NULL;
         if (infr_add(s, label, report, len) != INFR_OK)
             break;
@@ -104,7 +106,7 @@ static infr_session_t *load(FILE *f)
     return NULL;
 }
 
-static hidp_desc_t *describe(const infr_session_t *s, unsigned report_id)
+static hidp_desc_t *describe(const infr_session_t *s)
 {
     hidp_parse_options_t strict = {HIDP_PARSE_STRICT, NULL, NULL, NULL};
     static unsigned char desc[65536];
@@ -112,7 +114,7 @@ static hidp_desc_t *describe(const infr_session_t *s, unsigned report_id)
     size_t len = 0;
     size_t error_offset = 0;
 
-    if (infr_descriptor(s, report_id, desc, sizeof(desc), &len) != INFR_OK)
+    if (infr_descriptor(s, desc, sizeof(desc), &len) != INFR_OK)
         return NULL;
     if (hidp_desc_parse(desc, len, &strict, &d, &error_offset) != HIDP_OK)
         return NULL;
@@ -154,12 +156,12 @@ int main(int argc, char **argv)
     int ok = 0;
 
     if (argc != 3 || (f = fopen(argv[1], "r")) == NULL) {
-        fprintf(stderr, "usage: decode_check <samples> <report_id>\n");
+        fprintf(stderr, "usage: decode_check <samples> <uses report ids: 0 or 1>\n");
         return 2;
     }
-    s = load(f);
+    s = load(f, strtoul(argv[2], NULL, 0) != 0 ? INFR_REPORT_IDS : 0);
     if (s != NULL)
-        d = describe(s, (unsigned)strtoul(argv[2], NULL, 0));
+        d = describe(s);
     if (d != NULL) {
         rewind(f);
         ok = replay(f, s, d, &checked);

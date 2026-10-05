@@ -19,7 +19,7 @@ int main(void)
     if (status == INFR_OK)
         status = infr_analyze(s);
     if (status == INFR_OK)
-        status = infr_descriptor(s, 0, desc, sizeof(desc), &len);
+        status = infr_descriptor(s, desc, sizeof(desc), &len);
     if (infr_field_count(s) == 0 || infr_field(s, 0) == NULL || infr_strerror(status) == NULL)
         status = INFR_ERR_STATE;
     infr_destroy(s);

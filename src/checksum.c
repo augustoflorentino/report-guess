@@ -76,7 +76,7 @@ static uint8_t infr_check8(const unsigned char *r, size_t len, size_t pos, unsig
     }
 }
 
-static int infr_byte_varies(const infr_session_t *s, size_t pos, size_t bytes)
+static int infr_byte_varies(const infr_layout_t *s, size_t pos, size_t bytes)
 {
     size_t b;
 
@@ -89,7 +89,7 @@ static int infr_byte_varies(const infr_session_t *s, size_t pos, size_t bytes)
     return 0;
 }
 
-static int infr_matches8(const infr_session_t *s, size_t pos, unsigned algorithm, size_t covered)
+static int infr_matches8(const infr_layout_t *s, size_t pos, unsigned algorithm, size_t covered)
 {
     size_t i;
     size_t misses = 0;
@@ -104,7 +104,7 @@ static int infr_matches8(const infr_session_t *s, size_t pos, unsigned algorithm
     return 1;
 }
 
-static int infr_matches32(const infr_session_t *s, size_t pos, int seed)
+static int infr_matches32(const infr_layout_t *s, size_t pos, int seed)
 {
     size_t i;
     size_t misses = 0;
@@ -119,7 +119,7 @@ static int infr_matches32(const infr_session_t *s, size_t pos, int seed)
     return 1;
 }
 
-static infr_field_t *infr_add_checksum(infr_session_t *s, size_t pos, unsigned bytes, unsigned algorithm,
+static infr_field_t *infr_add_checksum(infr_layout_t *s, size_t pos, unsigned bytes, unsigned algorithm,
                                        size_t covered)
 {
     infr_field_t *f = infr_new_field(s, pos * 8, bytes * 8, INFR_CHECKSUM);
@@ -138,7 +138,7 @@ static uint32_t infr_seed_state(int seed)
     return infr_crc32_update(0xffffffffu, &first, 1);
 }
 
-static size_t infr_find_crc32(const infr_session_t *s, int *out_seed)
+static size_t infr_find_crc32(const infr_layout_t *s, int *out_seed)
 {
     const unsigned char *r = infr_sample(s, 0);
     size_t best = 0;
@@ -160,7 +160,7 @@ static size_t infr_find_crc32(const infr_session_t *s, int *out_seed)
     return best;
 }
 
-static int infr_mixes_bytes(const infr_session_t *s, size_t pos, size_t covered)
+static int infr_mixes_bytes(const infr_layout_t *s, size_t pos, size_t covered)
 {
     size_t varying = 0;
     size_t b;
@@ -170,7 +170,7 @@ static int infr_mixes_bytes(const infr_session_t *s, size_t pos, size_t covered)
     return varying >= 2;
 }
 
-static int infr_try_check8(infr_session_t *s, size_t pos)
+static int infr_try_check8(infr_layout_t *s, size_t pos)
 {
     unsigned algorithm;
     size_t covers[2];
@@ -191,7 +191,7 @@ static int infr_try_check8(infr_session_t *s, size_t pos)
     return 0;
 }
 
-void infr_find_checksums(infr_session_t *s)
+void infr_find_checksums(infr_layout_t *s)
 {
     int seed = INFR_SEED_NONE;
     size_t crc_pos = infr_find_crc32(s, &seed);

@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define MAX_REPORT 4096
 #define MAX_SAMPLES 100000
@@ -18,7 +19,7 @@ static size_t read_hex(const char *text, unsigned char *out)
     return n;
 }
 
-static int load(FILE *f, infr_session_t **out_session)
+static int load(FILE *f, const infr_options_t *options, infr_session_t **out_session)
 {
     static char line[MAX_REPORT * 2 + 64];
     static char hex[MAX_REPORT * 2 + 1];
@@ -33,9 +34,8 @@ static int load(FILE *f, infr_session_t **out_session)
         if (line[0] == '#' || sscanf(line, "%d %8192s", &label, hex) != 2)
             continue;
         len = read_hex(hex, report);
-
         if (s == NULL)
-            status = infr_create(len, MAX_SAMPLES, NULL, &s);
+            status = infr_create(options->flags ? MAX_REPORT : len, MAX_SAMPLES, options, &s);
         if (status == INFR_OK)
             status = infr_add(s, label, report, len);
     }
@@ -50,18 +50,18 @@ static void print_fields(const infr_session_t *s)
     for (i = 0; i < infr_field_count(s); i++) {
         const infr_field_t *f = infr_field(s, i);
 
-        printf("bit %-5zu %2u bits  %-8s label %-3d usage %04x:%04x  range %d..%d\n", f->bit_offset,
-               f->bit_size, kinds[f->kind], f->label, (unsigned)f->usage_page, (unsigned)f->usage,
+        printf("report %-3u bit %-5zu %2u bits  %-8s label %-3d usage %04x:%04x  range %d..%d\n", f->report_id,
+               f->bit_offset, f->bit_size, kinds[f->kind], f->label, (unsigned)f->usage_page, (unsigned)f->usage,
                f->logical_min, f->logical_max);
     }
 }
 
-static int print_descriptor(const infr_session_t *s, unsigned report_id)
+static int print_descriptor(const infr_session_t *s)
 {
     static unsigned char desc[65536];
     size_t len = 0;
     size_t i;
-    int status = infr_descriptor(s, report_id, desc, sizeof(desc), &len);
+    int status = infr_descriptor(s, desc, sizeof(desc), &len);
 
     if (status != INFR_OK)
         return status;
@@ -73,20 +73,22 @@ static int print_descriptor(const infr_session_t *s, unsigned report_id)
 int main(int argc, char **argv)
 {
     FILE *f = argc > 1 ? fopen(argv[1], "r") : stdin;
-    unsigned report_id = argc > 2 ? (unsigned)strtoul(argv[2], NULL, 0) : 0;
+    infr_options_t options = {0, NULL, NULL, NULL};
     infr_session_t *s = NULL;
     int status;
 
     if (f == NULL) {
-        fprintf(stderr, "usage: infer_samples [samples file] [report id]\n");
+        fprintf(stderr, "usage: infer_samples [samples file] [ids]\n");
         return 2;
     }
-    status = load(f, &s);
+    if (argc > 2 && strcmp(argv[2], "ids") == 0)
+        options.flags = INFR_REPORT_IDS;
+    status = load(f, &options, &s);
     if (status == INFR_OK)
         status = infr_analyze(s);
     if (status == INFR_OK) {
         print_fields(s);
-        status = print_descriptor(s, report_id);
+        status = print_descriptor(s);
     }
     if (status != INFR_OK)
         fprintf(stderr, "infer: %s\n", infr_strerror(status));

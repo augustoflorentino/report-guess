@@ -58,6 +58,9 @@ extern "C" {
 
 #define INFR_MAX_HINTS 64
 #define INFR_MAX_LABELS 64
+#define INFR_MAX_REPORTS 16
+
+#define INFR_REPORT_IDS 0x1u
 
 typedef struct infr_session infr_session_t;
 
@@ -65,12 +68,14 @@ typedef void *(*infr_alloc_fn)(void *ctx, size_t size);
 typedef void (*infr_free_fn)(void *ctx, void *ptr);
 
 typedef struct infr_options {
+    unsigned flags;
     infr_alloc_fn alloc_fn;
     infr_free_fn free_fn;
     void *alloc_ctx;
 } infr_options_t;
 
 typedef struct infr_field {
+    unsigned report_id;
     size_t bit_offset;
     unsigned bit_size;
     unsigned kind;
@@ -100,8 +105,8 @@ INFR_API size_t infr_field_count(const infr_session_t *session);
 INFR_API const infr_field_t *infr_field(const infr_session_t *session, size_t index);
 INFR_API int infr_normalize(const infr_session_t *session, const unsigned char *report,
                             size_t report_len, unsigned char *out, size_t out_len);
-INFR_API int infr_descriptor(const infr_session_t *session, unsigned report_id,
-                             unsigned char *out, size_t out_len, size_t *out_written);
+INFR_API int infr_descriptor(const infr_session_t *session, unsigned char *out, size_t out_len,
+                             size_t *out_written);
 INFR_API const char *infr_strerror(int status);
 
 #ifdef __cplusplus
