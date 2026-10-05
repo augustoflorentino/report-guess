@@ -70,8 +70,8 @@ static int on_value(void *opaque, const hidp_value_t *v)
     decode_ctx_t *c = opaque;
     const infr_field_t *f = field_at(c->session, v->field->bit_offset);
 
-    if (f == NULL || expected_value(c->raw, f) != v->value) {
-        fprintf(stderr, "bit %zu decoded %d\n", v->field->bit_offset, v->value);
+    if (f == NULL || (int64_t)expected_value(c->raw, f) != v->value) {
+        fprintf(stderr, "bit %zu decoded %lld\n", v->field->bit_offset, (long long)v->value);
         c->ok = 0;
         return 1;
     }

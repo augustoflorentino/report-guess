@@ -108,7 +108,7 @@ Limits:
 the field layout taken from the device descriptor, and `decode.py` parses the emitted
 descriptor with hid-tools and checks it against the inferred fields.
 
-When hid-parser 1.0 or later is found by CMake, `ctest` also parses every emitted descriptor with
+When hid-parser 3.0 or later is found by CMake, `ctest` also parses every emitted descriptor with
 `hidp_desc_parse` in strict mode and checks each data field against the analysis. It also replays every sample through `infr_normalize` and
 `hidp_report_decode` and checks each decoded value against the raw report.
 
