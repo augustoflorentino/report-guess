@@ -1,0 +1,10 @@
+0 8 constant range=1..1 rest=1 noise=0 label=-2 usage=0:0
+8 1 button range=0..1 rest=0 noise=0 label=-2 usage=9:1
+9 1 button range=0..1 rest=0 noise=0 label=-2 usage=9:2
+10 6 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+16 8 axis range=97..157 rest=128 noise=0 label=-2 usage=1:30
+24 8 constant range=85..85 rest=85 noise=0 label=-2 usage=0:0
+0 8 constant range=2..2 rest=2 noise=0 label=-2 usage=0:0
+8 8 axis range=0..255 rest=0 noise=0 label=-2 usage=1:30
+16 8 constant range=0..0 rest=0 noise=0 label=-2 usage=0:0
+descriptor 05010905a1018501050909011500250175019501810209028102950681030501093026ff0075089501810275019508810385020930750895018102750195088103c0
