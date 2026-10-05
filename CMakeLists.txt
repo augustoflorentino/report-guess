@@ -83,6 +83,8 @@ endif()
 if(INFER_BUILD_EXAMPLES)
     add_executable(infer_basic examples/basic.c)
     target_link_libraries(infer_basic PRIVATE infer)
+    add_executable(infer_samples examples/samples.c)
+    target_link_libraries(infer_samples PRIVATE infer)
 endif()
 
 if(INFER_BUILD_FUZZ)

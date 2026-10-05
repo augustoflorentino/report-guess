@@ -57,7 +57,10 @@ Define `INFR_STATIC` as well to keep every function private to that file.
 
 ## Usage
 
-See [`examples/basic.c`](examples/basic.c). The header `include/infer/infer.h` is the
+See [`examples/basic.c`](examples/basic.c), and
+[`examples/samples.c`](examples/samples.c) for a tool that reads a samples file (one report per
+line: label, then the report in hex; lines starting with `#` are skipped) and prints the layout
+and the descriptor. The header `include/infer/infer.h` is the
 API reference.
 
 Conventions:
