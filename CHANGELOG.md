@@ -4,6 +4,25 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 1.0.0 - 2026-10-04
+
+- changed: `infr_create` takes `const infr_options_t *` (allocator and context) instead of three
+  separate arguments, so new options can be added without another break
+- changed: `infr_descriptor` names its buffer `out`/`out_len` and the written length
+  `out_written`, following the output-last naming of the rest of the API
+- `infr_field_t` layout is fixed for the 1.x series and its members are documented in the README
+- tests: with hid-parser 1.0 installed, every sample is decoded with `hidp_report_decode` and
+  compared with the raw report
+- soname is now `libinfer.so.1`
+
+Upgrading:
+
+- `infr_create(len, max, NULL, NULL, NULL, &s)` becomes `infr_create(len, max, NULL, &s)`
+- with an allocator: `infr_options_t o = {alloc_fn, free_fn, ctx};` then
+  `infr_create(len, max, &o, &s)`
+- `infr_descriptor` calls keep their arguments; only parameter names changed
+- rebuild against the new header; binaries linked to `libinfer.so.0` keep using the old library
+
 ## 0.3.0 - 2026-09-29
 
 - added: `INFR_MAX_LABELS`; `infr_add` returns `INFR_ERR_FULL` past 64 distinct positive labels
