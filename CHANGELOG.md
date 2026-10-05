@@ -4,6 +4,17 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 1.1.0 - 2026-10-04
+
+- added: `infr_set_usage` after `infr_analyze` applies the usages at once without a new
+  analysis; the session stays analyzed
+- added: `examples/samples.c`, a tool that analyzes a samples file and prints the layout and the
+  descriptor
+- tests: the optional hid-parser checks use hid-parser 3.x and its 64-bit decoded values
+
+Updating: no code changes needed. Code that called `infr_analyze` again after `infr_set_usage`
+keeps working; the call is no longer needed.
+
 ## 1.0.0 - 2026-10-04
 
 - changed: `infr_create` takes `const infr_options_t *` (allocator and context) instead of three
