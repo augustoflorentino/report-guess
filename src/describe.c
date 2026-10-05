@@ -209,6 +209,8 @@ void infr_assign_usages(infr_session_t *s)
 
         if (f->kind != INFR_BUTTON && f->kind != INFR_AXIS && f->kind != INFR_HAT)
             continue;
+        f->usage_page = 0;
+        f->usage = 0;
         if (h != NULL) {
             f->usage_page = h->usage_page;
             f->usage = h->usage;

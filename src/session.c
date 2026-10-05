@@ -154,7 +154,8 @@ int infr_set_usage(infr_session_t *session, int label, uint32_t usage_page, uint
     session->hints[i].usage = usage;
     if (i == session->hint_count)
         session->hint_count++;
-    session->analyzed = 0;
+    if (session->analyzed)
+        infr_assign_usages(session);
     return INFR_OK;
 }
 

@@ -221,6 +221,15 @@ static void test_set_usage(void)
     CHECK(f->usage_page == 0x01 && f->usage == 0x33);
     f = find_field(s, 16);
     CHECK(f->usage_page == 0x01 && f->usage == 0x30);
+    CHECK(infr_set_usage(s, 1, 0x09, 7) == INFR_OK);
+    CHECK(find_field(s, 8)->usage_page == 0x09 && find_field(s, 8)->usage == 7);
+    CHECK(infr_set_usage(s, 4, 0x01, 0x30) == INFR_OK);
+    CHECK(find_field(s, 40)->usage == 0x30 && find_field(s, 16)->usage != 0x30);
+    {
+        unsigned char out[REPORT_LEN] = {0};
+
+        CHECK(infr_normalize(s, out, REPORT_LEN, out, REPORT_LEN) != INFR_ERR_STATE);
+    }
     infr_destroy(s);
 }
 
