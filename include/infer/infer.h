@@ -107,6 +107,8 @@ INFR_API int infr_normalize(const infr_session_t *session, const unsigned char *
                             size_t report_len, unsigned char *out, size_t out_len);
 INFR_API int infr_descriptor(const infr_session_t *session, unsigned char *out, size_t out_len,
                              size_t *out_written);
+INFR_API int infr_read(const infr_session_t *session, const infr_field_t *field,
+                       const unsigned char *report, size_t report_len, int64_t *out_value);
 INFR_API const char *infr_strerror(int status);
 
 #ifdef __cplusplus

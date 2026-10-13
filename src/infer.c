@@ -239,3 +239,40 @@ int infr_normalize(const infr_session_t *session, const unsigned char *report, s
     infr_layout_normalize(layout, out);
     return INFR_OK;
 }
+
+static const infr_layout_t *infr_field_layout(const infr_session_t *s, const infr_field_t *field)
+{
+    size_t i;
+
+    for (i = 0; i < s->layout_count; i++) {
+        const infr_layout_t *l = s->layouts[i];
+
+        if (field >= l->fields && field < l->fields + l->field_count)
+            return l;
+    }
+    return NULL;
+}
+
+int infr_read(const infr_session_t *session, const infr_field_t *field, const unsigned char *report,
+              size_t report_len, int64_t *out_value)
+{
+    const infr_layout_t *layout;
+    uint32_t raw;
+    int64_t sign;
+
+    if (session == NULL || field == NULL || report == NULL || out_value == NULL)
+        return INFR_ERR_ARG;
+    if (!session->analyzed)
+        return INFR_ERR_STATE;
+    layout = infr_field_layout(session, field);
+    if (layout == NULL)
+        return INFR_ERR_ARG;
+    if (report_len != layout->report_len || ((session->flags & INFR_REPORT_IDS) && report[0] != layout->report_id))
+        return INFR_ERR_LEN;
+    raw = infr_raw(report, field->bit_offset, field->bit_size, (field->flags & INFR_BIG_ENDIAN) != 0);
+    if (field->flags & INFR_ACTIVE_LOW)
+        raw ^= 1u;
+    sign = (int64_t)1 << (field->bit_size - 1);
+    *out_value = (field->flags & INFR_SIGNED) ? ((int64_t)raw ^ sign) - sign : (int64_t)raw;
+    return INFR_OK;
+}

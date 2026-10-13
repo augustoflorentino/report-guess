@@ -235,6 +235,27 @@ static void test_set_usage(void)
     infr_destroy(s);
 }
 
+static void test_read(void)
+{
+    static const unsigned char r[REPORT_LEN] = {9, 0xfe, 0x12, 0x34, 3, 0xff, 0x80, 0};
+    infr_session_t *s = synth_session();
+    infr_session_t *other = synth_session();
+    int64_t v = 0;
+
+    CHECK(infr_read(s, find_field(s, 8), r, REPORT_LEN, &v) == INFR_ERR_ARG);
+    CHECK(infr_analyze(s) == INFR_OK && infr_analyze(other) == INFR_OK);
+    CHECK(infr_read(s, find_field(s, 8), r, REPORT_LEN, &v) == INFR_OK);
+    CHECK(v == 1);
+    CHECK(infr_read(s, find_field(s, 16), r, REPORT_LEN, &v) == INFR_OK && v == 0x1234);
+    CHECK(infr_read(s, find_field(s, 32), r, REPORT_LEN, &v) == INFR_OK && v == 3);
+    CHECK(infr_read(s, find_field(s, 40), r, REPORT_LEN, &v) == INFR_OK && v == -1);
+    CHECK(infr_read(s, find_field(other, 8), r, REPORT_LEN, &v) == INFR_ERR_ARG);
+    CHECK(infr_read(s, find_field(s, 8), r, REPORT_LEN - 1, &v) == INFR_ERR_LEN);
+    CHECK(infr_read(s, find_field(s, 8), r, REPORT_LEN, NULL) == INFR_ERR_ARG);
+    infr_destroy(other);
+    infr_destroy(s);
+}
+
 static void test_normalize(void)
 {
     static const unsigned char r[REPORT_LEN] = {9, 0xfe, 0x12, 0x34, 3, 0xff, 0x80, 0};
@@ -578,6 +599,7 @@ int main(void)
     test_field();
     test_set_usage();
     test_normalize();
+    test_read();
     test_descriptor();
     test_report_id();
     test_checksums();

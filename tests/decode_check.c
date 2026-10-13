@@ -11,6 +11,7 @@
 typedef struct {
     const infr_session_t *session;
     const unsigned char *raw;
+    size_t raw_len;
     size_t checked;
     int ok;
 } decode_ctx_t;
@@ -69,8 +70,11 @@ static int on_value(void *opaque, const hidp_value_t *v)
 {
     decode_ctx_t *c = opaque;
     const infr_field_t *f = field_at(c->session, v->field->report_id, v->field->bit_offset);
+    int64_t read = INT64_MIN;
 
-    if (f == NULL || (int64_t)expected_value(c->raw, f) != v->value) {
+    if (f != NULL && infr_read(c->session, f, c->raw, c->raw_len, &read) != INFR_OK)
+        read = INT64_MIN;
+    if (f == NULL || (int64_t)expected_value(c->raw, f) != v->value || read != v->value) {
         fprintf(stderr, "bit %zu decoded %lld\n", v->field->bit_offset, (long long)v->value);
         c->ok = 0;
         return 1;
@@ -127,7 +131,7 @@ static int replay(FILE *f, const infr_session_t *s, const hidp_desc_t *d, size_t
     static char hex[MAX_LINE];
     static unsigned char raw[MAX_REPORT];
     static unsigned char norm[MAX_REPORT];
-    decode_ctx_t c = {NULL, NULL, 0, 1};
+    decode_ctx_t c = {NULL, NULL, 0, 0, 1};
     int label;
 
     c.session = s;
@@ -138,6 +142,7 @@ static int replay(FILE *f, const infr_session_t *s, const hidp_desc_t *d, size_t
         if (line[0] == '#' || sscanf(line, "%d %16383s", &label, hex) != 2)
             continue;
         len = parse_hex(hex, raw, sizeof(raw));
+        c.raw_len = len;
         if (infr_normalize(s, raw, len, norm, sizeof(norm)) != INFR_OK)
             return 0;
         if (hidp_report_decode(d, HIDP_INPUT, norm, len, on_value, &c) != HIDP_OK)

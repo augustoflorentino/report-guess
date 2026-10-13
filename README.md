@@ -18,7 +18,8 @@ Button page, axes on Generic Desktop X..Wheel, hats as Hat Switch) that `infr_se
 override per label. `infr_descriptor` writes a gamepad descriptor with one input field per
 inferred button, axis and hat at its bit position; counters, checksums, noise and constants become padding. Reports
 must go through `infr_normalize` (active-low buttons inverted, big-endian fields swapped) before
-they match that descriptor.
+they match that descriptor. `infr_read` gives the value of one field in a raw report (sign,
+byte order and active-low applied) without going through a descriptor.
 
 Devices that send several reports, each starting with its report ID byte, are analyzed in one
 session created with `INFR_REPORT_IDS` in `infr_options_t.flags`. `infr_add` routes each report
