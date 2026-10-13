@@ -4,6 +4,34 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 2.0.0 - 2026-10-12
+
+- added: `INFR_REPORT_IDS` sessions: reports that start with a report ID byte are routed by it,
+  each ID keeps its own length and layout, and `infr_descriptor` writes one input report per ID
+  (up to `INFR_MAX_REPORTS`, 16). Devices that mix several input reports (Bluetooth gamepads,
+  vendor reports next to the main one) no longer need one session per ID and a hand-merged
+  descriptor
+- changed: `infr_options_t` starts with `unsigned flags`
+- changed: `infr_descriptor` lost its `report_id` argument; the report ID now comes from the
+  session
+- changed: `infr_field_t` gains `report_id` as its first member (80 bytes on 64-bit, 64 on
+  32-bit, fixed for 2.x)
+- `infr_normalize` routes reports the same way and returns `INFR_ERR_LEN` for an unknown ID
+- tests: `multi` dataset with two report IDs of different lengths, decoded with hid-parser
+- soname is now `libinfer.so.2`
+
+Upgrading:
+
+- options: `{alloc_fn, free_fn, ctx}` becomes `{0, alloc_fn, free_fn, ctx}`
+- `infr_descriptor(s, 0, out, out_len, &n)` becomes `infr_descriptor(s, out, out_len, &n)`
+- `infr_descriptor(s, id, ...)` with a report ID: create the session with
+  `infr_options_t o = {INFR_REPORT_IDS, NULL, NULL, NULL};` and call `infr_descriptor(s, out,
+  out_len, &n)`; reports of other IDs that used to fail `infr_add` with `INFR_ERR_LEN` are now
+  accepted and described
+- code reading `infr_field_t` by member name needs no change; code that depends on its size or
+  offsets must be rebuilt
+- rebuild against the new header; binaries linked to `libinfer.so.1` keep using the old library
+
 ## 1.1.0 - 2026-10-04
 
 - added: `infr_set_usage` after `infr_analyze` applies the usages at once without a new
