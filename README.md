@@ -20,7 +20,15 @@ inferred button, axis and hat at its bit position; counters, checksums, noise an
 must go through `infr_normalize` (active-low buttons inverted, big-endian fields swapped) before
 they match that descriptor.
 
-All memory is allocated by `infr_create`; analysis never allocates.
+Devices that send several reports, each starting with its report ID byte, are analyzed in one
+session created with `INFR_REPORT_IDS` in `infr_options_t.flags`. `infr_add` routes each report
+by its first byte, each report ID keeps its own length (up to the `report_len` given to
+`infr_create`) and its own layout, `infr_field` lists the fields of every report in ID order,
+and `infr_descriptor` writes one input report per ID.
+
+All memory is allocated by `infr_create`, except in `INFR_REPORT_IDS` sessions, where the first
+report of each ID allocates that report's buffers (`max_samples` reports each); analysis never
+allocates.
 
 ## Build and install
 
@@ -60,7 +68,7 @@ Define `INFR_STATIC` as well to keep every function private to that file.
 See [`examples/basic.c`](examples/basic.c), and
 [`examples/samples.c`](examples/samples.c) for a tool that reads a samples file (one report per
 line: label, then the report in hex; lines starting with `#` are skipped) and prints the layout
-and the descriptor. The header `include/infer/infer.h` is the
+and the descriptor (`infer_samples file ids` for reports that start with a report ID). The header `include/infer/infer.h` is the
 API reference.
 
 Conventions:
@@ -74,11 +82,12 @@ Labels: `INFR_REST` (0) marks reports taken with the device untouched, `INFR_FRE
 of free use, and positive numbers one action each. A field moved by no particular action has
 label `INFR_NO_LABEL`.
 
-Fields (`infr_field_t`, layout fixed for the 1.x series):
+Fields (`infr_field_t`, layout fixed for the 2.x series):
 
 | member | meaning |
 |---|---|
-| `bit_offset`, `bit_size` | position in the report, bit 0 is the low bit of byte 0 |
+| `report_id` | report the field belongs to; 0 without `INFR_REPORT_IDS` |
+| `bit_offset`, `bit_size` | position in the report, bit 0 is the low bit of byte 0 (the ID byte, when there is one) |
 | `kind` | `INFR_CONSTANT`, `INFR_BUTTON`, `INFR_AXIS`, `INFR_HAT`, `INFR_COUNTER`, `INFR_CHECKSUM`, `INFR_NOISE` |
 | `flags` | `INFR_SIGNED`, `INFR_BIG_ENDIAN`, `INFR_ACTIVE_LOW` |
 | `logical_min`, `logical_max` | observed range; for hats the direction range; for counters the wrap value |
@@ -96,7 +105,7 @@ Limits:
 - one checksum per report, which must be the last bytes it covers
 - hats use values 0 to 7 plus one rest value of 8 or 15
 - fields up to 32 bits; 32-bit axes are always signed
-- with a report ID, the first field must be the constant ID byte
+- at most `INFR_MAX_REPORTS` (16) report IDs per session; report ID 0 is rejected
 
 ## Validation
 
@@ -104,6 +113,7 @@ Limits:
 
 - `ninja-*`: Gamer Ninja Sword (Home+X mode) reports built from its known mapping, labeled and
   free play
+- `multi`: two input reports with different IDs and lengths in one session
 - `ds4-*`, `ds5-*`: hid-tools DualShock 4 and DualSense simulators over USB and Bluetooth, with
   the DualShock 4 counter and timestamp filled in as the hardware does
 
