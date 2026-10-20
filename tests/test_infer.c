@@ -346,7 +346,12 @@ static void test_report_id(void)
         CHECK(infr_report_info(s, 0, NULL, NULL, NULL) == INFR_OK);
     }
     CHECK(infr_add(s, INFR_FREE, other, 2) == INFR_OK);
-    CHECK(infr_analyze(s) == INFR_ERR_SAMPLES);
+    CHECK(infr_analyze(s) == INFR_OK);
+    CHECK(infr_field(s, infr_field_count(s) - 1)->report_id == 7);
+    CHECK(infr_normalize(s, other, 2, out, sizeof(out)) == INFR_ERR_LEN);
+    CHECK(infr_descriptor(s, buf, sizeof(buf), &len) == INFR_OK);
+    for (i = 0; i + 1 < len; i++)
+        CHECK(!(buf[i] == 0x85 && buf[i + 1] == 0x09));
     for (i = 10; i < 10 + INFR_MAX_REPORTS - 3; i++) {
         buf[0] = (unsigned char)i;
         CHECK(infr_add(s, INFR_FREE, buf, 1) == INFR_OK);

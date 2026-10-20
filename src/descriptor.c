@@ -165,8 +165,10 @@ int infr_descriptor(const infr_session_t *session, unsigned char *out, size_t ou
     infr_item(&w, INFR_TYPE_GLOBAL, 0x0, 0x01, 1);
     infr_item(&w, INFR_TYPE_LOCAL, 0x0, 0x05, 1);
     infr_item(&w, INFR_TYPE_MAIN, 0xa, 0x01, 1);
-    for (i = 0; i < session->layout_count; i++)
-        infr_write_report(&w, session->layouts[i], (session->flags & INFR_REPORT_IDS) != 0);
+    for (i = 0; i < session->layout_count; i++) {
+        if (session->layouts[i]->analyzed)
+            infr_write_report(&w, session->layouts[i], (session->flags & INFR_REPORT_IDS) != 0);
+    }
     infr_item(&w, INFR_TYPE_MAIN, 0xc, 0, 0);
     *out_written = w.len;
     return w.len <= out_len ? INFR_OK : INFR_ERR_SPACE;

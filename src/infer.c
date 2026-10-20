@@ -106,6 +106,14 @@ static infr_layout_t *infr_find_layout(const infr_session_t *s, const unsigned c
     return NULL;
 }
 
+static const infr_layout_t *infr_find_analyzed(const infr_session_t *s, const unsigned char *report,
+                                               size_t report_len)
+{
+    const infr_layout_t *l = infr_find_layout(s, report, report_len);
+
+    return l != NULL && l->analyzed ? l : NULL;
+}
+
 static int infr_route(infr_session_t *s, const unsigned char *report, size_t report_len, infr_layout_t **out)
 {
     size_t i;
@@ -189,13 +197,12 @@ int infr_analyze(infr_session_t *session)
         return INFR_ERR_SAMPLES;
     session->analyzed = 0;
     for (i = 0; i < session->layout_count; i++) {
-        int status = infr_layout_analyze(session->layouts[i]);
+        infr_layout_t *l = session->layouts[i];
 
-        if (status != INFR_OK)
-            return status;
+        if (infr_layout_analyze(l) == INFR_OK)
+            session->analyzed = 1;
     }
-    session->analyzed = 1;
-    return INFR_OK;
+    return session->analyzed ? INFR_OK : INFR_ERR_SAMPLES;
 }
 
 size_t infr_field_count(const infr_session_t *session)
@@ -231,7 +238,7 @@ int infr_normalize(const infr_session_t *session, const unsigned char *report, s
         return INFR_ERR_ARG;
     if (!session->analyzed)
         return INFR_ERR_STATE;
-    layout = infr_find_layout(session, report, report_len);
+    layout = infr_find_analyzed(session, report, report_len);
     if (layout == NULL)
         return INFR_ERR_LEN;
     if (out_len < report_len)
