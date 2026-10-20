@@ -335,6 +335,16 @@ static void test_report_id(void)
     CHECK(memchr(buf + 8, 0x85, len - 8) != NULL && ((unsigned char *)memchr(buf + 8, 0x85, len - 8))[1] == 0x07);
     CHECK(infr_normalize(s, other, 2, out, sizeof(out)) == INFR_ERR_LEN);
     CHECK(infr_normalize(s, bad_len, 2, out, sizeof(out)) == INFR_ERR_LEN);
+    CHECK(infr_report_count(s) == 2);
+    {
+        unsigned id = 0;
+        size_t rlen = 0;
+        size_t n = 0;
+
+        CHECK(infr_report_info(s, 1, &id, &rlen, &n) == INFR_OK && id == 7 && rlen == 2 && n == 200);
+        CHECK(infr_report_info(s, 2, &id, &rlen, &n) == INFR_ERR_ARG);
+        CHECK(infr_report_info(s, 0, NULL, NULL, NULL) == INFR_OK);
+    }
     CHECK(infr_add(s, INFR_FREE, other, 2) == INFR_OK);
     CHECK(infr_analyze(s) == INFR_ERR_SAMPLES);
     for (i = 10; i < 10 + INFR_MAX_REPORTS - 3; i++) {

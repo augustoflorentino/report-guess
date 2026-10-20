@@ -276,3 +276,25 @@ int infr_read(const infr_session_t *session, const infr_field_t *field, const un
     *out_value = (field->flags & INFR_SIGNED) ? ((int64_t)raw ^ sign) - sign : (int64_t)raw;
     return INFR_OK;
 }
+
+size_t infr_report_count(const infr_session_t *session)
+{
+    return session != NULL ? session->layout_count : 0;
+}
+
+int infr_report_info(const infr_session_t *session, size_t index, unsigned *out_report_id,
+                     size_t *out_report_len, size_t *out_samples)
+{
+    const infr_layout_t *l;
+
+    if (session == NULL || index >= session->layout_count)
+        return INFR_ERR_ARG;
+    l = session->layouts[index];
+    if (out_report_id != NULL)
+        *out_report_id = l->report_id;
+    if (out_report_len != NULL)
+        *out_report_len = l->report_len;
+    if (out_samples != NULL)
+        *out_samples = l->count;
+    return INFR_OK;
+}

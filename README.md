@@ -25,7 +25,8 @@ Devices that send several reports, each starting with its report ID byte, are an
 session created with `INFR_REPORT_IDS` in `infr_options_t.flags`. `infr_add` routes each report
 by its first byte, each report ID keeps its own length (up to the `report_len` given to
 `infr_create`) and its own layout, `infr_field` lists the fields of every report in ID order,
-and `infr_descriptor` writes one input report per ID.
+and `infr_descriptor` writes one input report per ID. `infr_report_count` and `infr_report_info`
+list the report IDs seen so far with their length and sample count.
 
 All memory is allocated by `infr_create`, except in `INFR_REPORT_IDS` sessions, where the first
 report of each ID allocates that report's buffers (`max_samples` reports each); analysis never
