@@ -543,6 +543,25 @@ static void test_label_limit(void)
     infr_destroy(s);
 }
 
+static void test_label_limit_new_report(void)
+{
+    static const infr_options_t ids = {INFR_REPORT_IDS, NULL, NULL, NULL};
+    unsigned char a[2] = {1, 0};
+    unsigned char b[2] = {2, 0};
+    infr_session_t *s = NULL;
+    int label;
+
+    CHECK(infr_create(2, 100, &ids, &s) == INFR_OK);
+    for (label = 1; label <= INFR_MAX_LABELS; label++) {
+        a[1] = (unsigned char)label;
+        CHECK(infr_add(s, label, a, 2) == INFR_OK);
+    }
+    CHECK(infr_add(s, INFR_MAX_LABELS + 1, b, 2) == INFR_ERR_FULL);
+    CHECK(infr_report_count(s) == 1);
+    CHECK(infr_analyze(s) == INFR_OK);
+    infr_destroy(s);
+}
+
 static void test_hat_rest_15(void)
 {
     unsigned char r[1];
@@ -618,6 +637,7 @@ int main(void)
     test_counter_step();
     test_label_limit();
     test_hat_rest_15();
+    test_label_limit_new_report();
     test_strerror();
     test_alloc_failure();
     return 0;

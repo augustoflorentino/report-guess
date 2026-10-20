@@ -124,7 +124,7 @@ static int infr_route(infr_session_t *s, const unsigned char *report, size_t rep
     return infr_add_layout(s, report[0], report_len, out);
 }
 
-static int infr_track_label(infr_session_t *s, int label)
+static int infr_label_known(const infr_session_t *s, int label)
 {
     size_t i;
 
@@ -134,10 +134,7 @@ static int infr_track_label(infr_session_t *s, int label)
         if (s->seen_labels[i] == label)
             return 1;
     }
-    if (s->label_count == INFR_MAX_LABELS)
-        return 0;
-    s->seen_labels[s->label_count++] = label;
-    return 1;
+    return 0;
 }
 
 int infr_add(infr_session_t *session, int label, const unsigned char *report, size_t report_len)
@@ -147,11 +144,15 @@ int infr_add(infr_session_t *session, int label, const unsigned char *report, si
 
     if (session == NULL || report == NULL || label < INFR_FREE || report_len == 0)
         return INFR_ERR_ARG;
+    if (!infr_label_known(session, label) && session->label_count == INFR_MAX_LABELS)
+        return INFR_ERR_FULL;
     status = infr_route(session, report, report_len, &layout);
     if (status != INFR_OK)
         return status;
-    if (layout->count == layout->max_samples || !infr_track_label(session, label))
+    if (layout->count == layout->max_samples)
         return INFR_ERR_FULL;
+    if (!infr_label_known(session, label))
+        session->seen_labels[session->label_count++] = label;
     session->analyzed = 0;
     return infr_layout_add(layout, label, report);
 }
