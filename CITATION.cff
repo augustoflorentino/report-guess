@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If report-guess was part of your analysis, please cite it."
+type: software
+title: report-guess
+abstract: "C library that infers the field layout of undocumented binary reports from labeled samples"
+authors:
+  - family-names: Florentino
+    given-names: Augusto
+license: MIT
+repository-code: "https://github.com/augustoflorentino/report-guess"
+keywords:
+  - c
+  - c99
+  - library
+  - hid
+  - reverse-engineering
+  - gamepad
+  - inference
+  - binary-parsing
