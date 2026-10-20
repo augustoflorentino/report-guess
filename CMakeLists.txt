@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(infer VERSION 2.0.0 DESCRIPTION "Infer the field layout of undocumented binary reports and emit a HID descriptor" LANGUAGES C)
+project(infer VERSION 2.2.0 DESCRIPTION "Infer the field layout of undocumented binary reports and emit a HID descriptor" LANGUAGES C)
 
 option(INFER_BUILD_TESTS "Build tests" OFF)
 option(INFER_BUILD_EXAMPLES "Build examples" OFF)

@@ -4,6 +4,17 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 2.2.0 - 2026-10-19
+
+- added: `infr_read` gives the value of one field in a raw report, with sign, byte order and
+  active-low applied, as `int64_t` so unsigned 32-bit fields keep their value
+- added: `infr_report_count` and `infr_report_info` list the report IDs of a session with
+  their length and sample count
+- tests: the hid-parser cross-check also compares every decoded value with `infr_read`
+
+Updating: no code changes needed. 2.1.0 was not released; its additions are part of this
+release.
+
 ## 2.0.0 - 2026-10-12
 
 - added: `INFR_REPORT_IDS` sessions: reports that start with a report ID byte are routed by it,
