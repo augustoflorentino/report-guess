@@ -31,7 +31,8 @@ by its first byte, each report ID keeps its own length (up to the `report_len` g
 `infr_create`) and its own layout, `infr_field` lists the fields of every report in ID order,
 and `infr_descriptor` writes one input report per ID. `infr_report_count` and `infr_report_info`
 list the report IDs seen so far with their length and sample count. A report ID with fewer than
-two samples is left out of the model.
+two samples is left out of the model; `infr_model_report_count` and `infr_model_report_info`
+list the reports a model describes, with their length.
 
 All memory is allocated by `infr_create`, except in `INFR_REPORT_IDS` sessions, where the first
 report of each ID allocates that report's buffers (`max_samples` reports each), and by

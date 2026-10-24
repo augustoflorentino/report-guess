@@ -16,6 +16,8 @@ static void fuzz_read(const infr_model_t *s, const uint8_t *report, size_t len)
 
     for (i = 0; i < infr_field_count(s); i++)
         infr_read(s, infr_field(s, i), report, len, &value);
+    for (i = 0; i <= infr_model_report_count(s); i++)
+        infr_model_report_info(s, i, NULL, NULL);
 }
 
 static void fuzz_usages(infr_model_t *m, const uint8_t *data, size_t size, size_t report_len)
