@@ -42,7 +42,7 @@ static int infr_add_layout(infr_session_t *s, unsigned report_id, size_t report_
 
     if (s->layout_count == INFR_MAX_REPORTS)
         return INFR_ERR_FULL;
-    status = infr_layout_create(&s->alloc, report_len, s->max_samples, &s->hints, out);
+    status = infr_layout_create(&s->alloc, report_len, s->max_samples, &s->no_hints, out);
     if (status != INFR_OK)
         return status;
     (*out)->report_id = report_id;
@@ -106,14 +106,6 @@ static infr_layout_t *infr_find_layout(const infr_session_t *s, const unsigned c
     return NULL;
 }
 
-static const infr_layout_t *infr_find_analyzed(const infr_session_t *s, const unsigned char *report,
-                                               size_t report_len)
-{
-    const infr_layout_t *l = infr_find_layout(s, report, report_len);
-
-    return l != NULL && l->analyzed ? l : NULL;
-}
-
 static int infr_route(infr_session_t *s, const unsigned char *report, size_t report_len, infr_layout_t **out)
 {
     size_t i;
@@ -161,128 +153,7 @@ int infr_add(infr_session_t *session, int label, const unsigned char *report, si
         return INFR_ERR_FULL;
     if (!infr_label_known(session, label))
         session->seen_labels[session->label_count++] = label;
-    session->analyzed = 0;
     return infr_layout_add(layout, label, report);
-}
-
-int infr_set_usage(infr_session_t *session, int label, uint32_t usage_page, uint32_t usage)
-{
-    infr_hints_t *h;
-    size_t i;
-
-    if (session == NULL || label <= INFR_REST || usage_page == 0 || usage_page > 0xffff || usage > 0xffff)
-        return INFR_ERR_ARG;
-    h = &session->hints;
-    for (i = 0; i < h->count && h->items[i].label != label; i++)
-        ;
-    if (i == INFR_MAX_HINTS)
-        return INFR_ERR_FULL;
-    h->items[i].label = label;
-    h->items[i].usage_page = usage_page;
-    h->items[i].usage = usage;
-    if (i == h->count)
-        h->count++;
-    for (i = 0; session->analyzed && i < session->layout_count; i++)
-        infr_assign_usages(session->layouts[i]);
-    return INFR_OK;
-}
-
-int infr_analyze(infr_session_t *session)
-{
-    size_t i;
-
-    if (session == NULL)
-        return INFR_ERR_ARG;
-    if (session->layout_count == 0)
-        return INFR_ERR_SAMPLES;
-    session->analyzed = 0;
-    for (i = 0; i < session->layout_count; i++) {
-        infr_layout_t *l = session->layouts[i];
-
-        if (infr_layout_analyze(l) == INFR_OK)
-            session->analyzed = 1;
-    }
-    return session->analyzed ? INFR_OK : INFR_ERR_SAMPLES;
-}
-
-size_t infr_field_count(const infr_session_t *session)
-{
-    size_t n = 0;
-    size_t i;
-
-    for (i = 0; session != NULL && session->analyzed && i < session->layout_count; i++)
-        n += session->layouts[i]->field_count;
-    return n;
-}
-
-const infr_field_t *infr_field(const infr_session_t *session, size_t index)
-{
-    size_t i;
-
-    for (i = 0; session != NULL && session->analyzed && i < session->layout_count; i++) {
-        const infr_layout_t *l = session->layouts[i];
-
-        if (index < l->field_count)
-            return &l->fields[index];
-        index -= l->field_count;
-    }
-    return NULL;
-}
-
-int infr_normalize(const infr_session_t *session, const unsigned char *report, size_t report_len,
-                   unsigned char *out, size_t out_len)
-{
-    const infr_layout_t *layout;
-
-    if (session == NULL || report == NULL || out == NULL || report_len == 0)
-        return INFR_ERR_ARG;
-    if (!session->analyzed)
-        return INFR_ERR_STATE;
-    layout = infr_find_analyzed(session, report, report_len);
-    if (layout == NULL)
-        return INFR_ERR_LEN;
-    if (out_len < report_len)
-        return INFR_ERR_SPACE;
-    memmove(out, report, report_len);
-    infr_layout_normalize(layout, out);
-    return INFR_OK;
-}
-
-static const infr_layout_t *infr_field_layout(const infr_session_t *s, const infr_field_t *field)
-{
-    size_t i;
-
-    for (i = 0; i < s->layout_count; i++) {
-        const infr_layout_t *l = s->layouts[i];
-
-        if (field >= l->fields && field < l->fields + l->field_count)
-            return l;
-    }
-    return NULL;
-}
-
-int infr_read(const infr_session_t *session, const infr_field_t *field, const unsigned char *report,
-              size_t report_len, int64_t *out_value)
-{
-    const infr_layout_t *layout;
-    uint32_t raw;
-    int64_t sign;
-
-    if (session == NULL || field == NULL || report == NULL || out_value == NULL)
-        return INFR_ERR_ARG;
-    if (!session->analyzed)
-        return INFR_ERR_STATE;
-    layout = infr_field_layout(session, field);
-    if (layout == NULL)
-        return INFR_ERR_ARG;
-    if (report_len != layout->report_len || ((session->flags & INFR_REPORT_IDS) && report[0] != layout->report_id))
-        return INFR_ERR_LEN;
-    raw = infr_raw(report, field->bit_offset, field->bit_size, (field->flags & INFR_BIG_ENDIAN) != 0);
-    if (field->flags & INFR_ACTIVE_LOW)
-        raw ^= 1u;
-    sign = (int64_t)1 << (field->bit_size - 1);
-    *out_value = (field->flags & INFR_SIGNED) ? ((int64_t)raw ^ sign) - sign : (int64_t)raw;
-    return INFR_OK;
 }
 
 size_t infr_report_count(const infr_session_t *session)

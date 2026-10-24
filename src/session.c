@@ -81,6 +81,33 @@ void infr_layout_destroy(infr_layout_t *s)
     a.free_fn(a.alloc_ctx, s);
 }
 
+int infr_layout_copy(const infr_alloc_t *alloc, const infr_layout_t *src, const infr_hints_t *hints,
+                     infr_layout_t **out_layout)
+{
+    infr_layout_t *s = alloc->alloc_fn(alloc->alloc_ctx, sizeof(*s));
+    int failed = 0;
+
+    *out_layout = NULL;
+    if (s == NULL)
+        return INFR_ERR_NOMEM;
+    memset(s, 0, sizeof(*s));
+    s->alloc = *alloc;
+    s->report_id = src->report_id;
+    s->report_len = src->report_len;
+    s->bits = src->bits;
+    s->hints = hints;
+    s->fields = infr_take(alloc, src->field_count + 1, sizeof(infr_field_t), &failed);
+    if (failed) {
+        infr_layout_destroy(s);
+        return INFR_ERR_NOMEM;
+    }
+    memcpy(s->fields, src->fields, src->field_count * sizeof(infr_field_t));
+    s->field_count = src->field_count;
+    s->analyzed = 1;
+    *out_layout = s;
+    return INFR_OK;
+}
+
 int infr_layout_add(infr_layout_t *s, int label, const unsigned char *report)
 {
     if (s->count == s->max_samples)

@@ -63,6 +63,7 @@ extern "C" {
 #define INFR_REPORT_IDS 0x1u
 
 typedef struct infr_session infr_session_t;
+typedef struct infr_model infr_model_t;
 
 typedef void *(*infr_alloc_fn)(void *ctx, size_t size);
 typedef void (*infr_free_fn)(void *ctx, void *ptr);
@@ -98,19 +99,20 @@ INFR_API int infr_create(size_t report_len, size_t max_samples, const infr_optio
 INFR_API void infr_destroy(infr_session_t *session);
 INFR_API int infr_add(infr_session_t *session, int label, const unsigned char *report,
                       size_t report_len);
-INFR_API int infr_set_usage(infr_session_t *session, int label, uint32_t usage_page,
-                            uint32_t usage);
-INFR_API int infr_analyze(infr_session_t *session);
-INFR_API size_t infr_field_count(const infr_session_t *session);
-INFR_API const infr_field_t *infr_field(const infr_session_t *session, size_t index);
-INFR_API int infr_normalize(const infr_session_t *session, const unsigned char *report,
-                            size_t report_len, unsigned char *out, size_t out_len);
-INFR_API int infr_descriptor(const infr_session_t *session, unsigned char *out, size_t out_len,
-                             size_t *out_written);
 INFR_API size_t infr_report_count(const infr_session_t *session);
 INFR_API int infr_report_info(const infr_session_t *session, size_t index, unsigned *out_report_id,
                               size_t *out_report_len, size_t *out_samples);
-INFR_API int infr_read(const infr_session_t *session, const infr_field_t *field,
+INFR_API int infr_analyze(infr_session_t *session, infr_model_t **out_model);
+
+INFR_API void infr_model_destroy(infr_model_t *model);
+INFR_API int infr_set_usage(infr_model_t *model, int label, uint32_t usage_page, uint32_t usage);
+INFR_API size_t infr_field_count(const infr_model_t *model);
+INFR_API const infr_field_t *infr_field(const infr_model_t *model, size_t index);
+INFR_API int infr_normalize(const infr_model_t *model, const unsigned char *report,
+                            size_t report_len, unsigned char *out, size_t out_len);
+INFR_API int infr_descriptor(const infr_model_t *model, unsigned char *out, size_t out_len,
+                             size_t *out_written);
+INFR_API int infr_read(const infr_model_t *model, const infr_field_t *field,
                        const unsigned char *report, size_t report_len, int64_t *out_value);
 INFR_API const char *infr_strerror(int status);
 

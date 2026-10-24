@@ -68,6 +68,7 @@ int main(int argc, char **argv)
 {
     static unsigned char desc[65536];
     infr_session_t *s = NULL;
+    infr_model_t *m = NULL;
     infr_options_t options = {0, NULL, NULL, NULL};
     FILE *f = argc > 1 ? fopen(argv[1], "r") : NULL;
     size_t i;
@@ -81,20 +82,21 @@ int main(int argc, char **argv)
         return 2;
     }
     fclose(f);
-    status = infr_analyze(s);
+    status = infr_analyze(s, &m);
+    infr_destroy(s);
     if (status == INFR_OK)
-        status = infr_descriptor(s, desc, sizeof(desc), &len);
+        status = infr_descriptor(m, desc, sizeof(desc), &len);
     if (status != INFR_OK) {
         fprintf(stderr, "error: %s\n", infr_strerror(status));
-        infr_destroy(s);
+        infr_model_destroy(m);
         return 1;
     }
-    for (i = 0; i < infr_field_count(s); i++)
-        print_field(infr_field(s, i));
+    for (i = 0; i < infr_field_count(m); i++)
+        print_field(infr_field(m, i));
     printf("descriptor ");
     for (i = 0; i < len; i++)
         printf("%02x", desc[i]);
     printf("\n");
-    infr_destroy(s);
+    infr_model_destroy(m);
     return 0;
 }

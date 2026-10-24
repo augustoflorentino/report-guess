@@ -16,6 +16,7 @@ int main(void)
     unsigned char report[3];
     unsigned char desc[256];
     infr_session_t *s = NULL;
+    infr_model_t *m = NULL;
     size_t len = 0;
     size_t i;
     int status;
@@ -27,18 +28,19 @@ int main(void)
         status = infr_add(s, n < 20 || n >= 100 ? INFR_REST : n < 60 ? 1 : 2, report, sizeof(report));
     }
     if (status == INFR_OK)
-        status = infr_set_usage(s, 1, 0x09, 1);
+        status = infr_analyze(s, &m);
+    infr_destroy(s);
     if (status == INFR_OK)
-        status = infr_analyze(s);
+        status = infr_set_usage(m, 1, 0x09, 1);
     if (status == INFR_OK)
-        status = infr_descriptor(s, desc, sizeof(desc), &len);
+        status = infr_descriptor(m, desc, sizeof(desc), &len);
     if (status != INFR_OK) {
         fprintf(stderr, "error: %s\n", infr_strerror(status));
-        infr_destroy(s);
+        infr_model_destroy(m);
         return 1;
     }
-    for (i = 0; i < infr_field_count(s); i++) {
-        const infr_field_t *f = infr_field(s, i);
+    for (i = 0; i < infr_field_count(m); i++) {
+        const infr_field_t *f = infr_field(m, i);
 
         printf("bit %zu, %u bits: %s, label %d\n", f->bit_offset, f->bit_size, kinds[f->kind], f->label);
     }
@@ -46,6 +48,6 @@ int main(void)
     for (i = 0; i < len; i++)
         printf(" %02x", desc[i]);
     printf("\n");
-    infr_destroy(s);
+    infr_model_destroy(m);
     return 0;
 }

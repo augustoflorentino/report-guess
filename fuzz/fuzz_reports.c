@@ -9,15 +9,25 @@ static size_t fuzz_len(const uint8_t *report, size_t report_len, int ids)
     return cut < report_len ? report_len - cut : report_len;
 }
 
-static void fuzz_read(const infr_session_t *s, const uint8_t *report, size_t len)
+static void fuzz_read(const infr_model_t *s, const uint8_t *report, size_t len)
 {
     int64_t value;
     size_t i;
 
     for (i = 0; i < infr_field_count(s); i++)
         infr_read(s, infr_field(s, i), report, len, &value);
-    for (i = 0; i <= infr_report_count(s); i++)
-        infr_report_info(s, i, NULL, NULL, NULL);
+}
+
+static void fuzz_usages(infr_model_t *m, const uint8_t *data, size_t size, size_t report_len)
+{
+    size_t pos;
+
+    for (pos = 2; pos + 1 + report_len <= size; pos += 1 + report_len) {
+        int label = (int)(data[pos] % 8) - 1;
+
+        if (label > 0)
+            infr_set_usage(m, label, data[pos], data[pos + 1]);
+    }
 }
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
@@ -26,6 +36,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     unsigned char desc[4096];
     infr_options_t options = {0, NULL, NULL, NULL};
     infr_session_t *s = NULL;
+    infr_model_t *m = NULL;
     size_t report_len;
     size_t len = 0;
     size_t pos = 2;
@@ -42,17 +53,22 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
         if (infr_add(s, label, data + pos + 1, n) == INFR_ERR_FULL)
             break;
-        if (label > 0)
-            infr_set_usage(s, label, data[pos], data[pos + 1]);
         pos += 1 + report_len;
     }
-    if (infr_analyze(s) == INFR_OK) {
-        infr_normalize(s, data + 2, fuzz_len(data + 2, report_len, (int)options.flags), out, sizeof(out));
-        fuzz_read(s, data + 2, fuzz_len(data + 2, report_len, (int)options.flags));
-        infr_set_usage(s, 1, 0x09, data[2]);
-        infr_descriptor(s, desc, sizeof(desc), &len);
-        infr_descriptor(s, NULL, 0, &len);
+    for (len = 0; len <= infr_report_count(s); len++)
+        infr_report_info(s, len, NULL, NULL, NULL);
+    len = 0;
+    if (infr_analyze(s, &m) == INFR_OK) {
+        if (data[1] & 2)
+            infr_destroy(s), s = NULL;
+        fuzz_usages(m, data, size, report_len);
+        infr_normalize(m, data + 2, fuzz_len(data + 2, report_len, (int)options.flags), out, sizeof(out));
+        fuzz_read(m, data + 2, fuzz_len(data + 2, report_len, (int)options.flags));
+        infr_set_usage(m, 1, 0x09, data[2]);
+        infr_descriptor(m, desc, sizeof(desc), &len);
+        infr_descriptor(m, NULL, 0, &len);
     }
+    infr_model_destroy(m);
     infr_destroy(s);
     return 0;
 }

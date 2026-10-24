@@ -60,15 +60,24 @@ struct infr_session {
     size_t max_samples;
     infr_layout_t *layouts[INFR_MAX_REPORTS];
     size_t layout_count;
-    infr_hints_t hints;
+    infr_hints_t no_hints;
     int seen_labels[INFR_MAX_LABELS];
     size_t label_count;
-    int analyzed;
+};
+
+struct infr_model {
+    infr_alloc_t alloc;
+    unsigned flags;
+    infr_hints_t hints;
+    infr_layout_t *layouts[INFR_MAX_REPORTS];
+    size_t layout_count;
 };
 
 INFR_INTERNAL int infr_layout_create(const infr_alloc_t *alloc, size_t report_len, size_t max_samples,
                                      const infr_hints_t *hints, infr_layout_t **out_layout);
 INFR_INTERNAL void infr_layout_destroy(infr_layout_t *layout);
+INFR_INTERNAL int infr_layout_copy(const infr_alloc_t *alloc, const infr_layout_t *src,
+                                   const infr_hints_t *hints, infr_layout_t **out_layout);
 INFR_INTERNAL int infr_layout_add(infr_layout_t *layout, int label, const unsigned char *report);
 INFR_INTERNAL int infr_layout_analyze(infr_layout_t *layout);
 INFR_INTERNAL void infr_layout_normalize(const infr_layout_t *layout, unsigned char *out);

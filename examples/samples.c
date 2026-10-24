@@ -43,7 +43,7 @@ static int load(FILE *f, const infr_options_t *options, infr_session_t **out_ses
     return s == NULL ? INFR_ERR_SAMPLES : status;
 }
 
-static void print_fields(const infr_session_t *s)
+static void print_fields(const infr_model_t *s)
 {
     size_t i;
 
@@ -56,7 +56,7 @@ static void print_fields(const infr_session_t *s)
     }
 }
 
-static int print_descriptor(const infr_session_t *s)
+static int print_descriptor(const infr_model_t *s)
 {
     static unsigned char desc[65536];
     size_t len = 0;
@@ -75,6 +75,7 @@ int main(int argc, char **argv)
     FILE *f = argc > 1 ? fopen(argv[1], "r") : stdin;
     infr_options_t options = {0, NULL, NULL, NULL};
     infr_session_t *s = NULL;
+    infr_model_t *m = NULL;
     int status;
 
     if (f == NULL) {
@@ -85,14 +86,15 @@ int main(int argc, char **argv)
         options.flags = INFR_REPORT_IDS;
     status = load(f, &options, &s);
     if (status == INFR_OK)
-        status = infr_analyze(s);
+        status = infr_analyze(s, &m);
+    infr_destroy(s);
     if (status == INFR_OK) {
-        print_fields(s);
-        status = print_descriptor(s);
+        print_fields(m);
+        status = print_descriptor(m);
     }
     if (status != INFR_OK)
         fprintf(stderr, "infer: %s\n", infr_strerror(status));
-    infr_destroy(s);
+    infr_model_destroy(m);
     if (f != stdin)
         fclose(f);
     return status == INFR_OK ? 0 : 1;

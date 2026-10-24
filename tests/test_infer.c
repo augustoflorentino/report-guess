@@ -107,13 +107,21 @@ static infr_session_t *synth_session(void)
     return s;
 }
 
-static const infr_field_t *find_field(const infr_session_t *s, size_t bit_offset)
+static infr_model_t *analyze(infr_session_t *s)
+{
+    infr_model_t *m = NULL;
+
+    CHECK(infr_analyze(s, &m) == INFR_OK && m != NULL);
+    return m;
+}
+
+static const infr_field_t *find_field(const infr_model_t *m, size_t bit_offset)
 {
     size_t i;
 
-    for (i = 0; i < infr_field_count(s); i++) {
-        if (infr_field(s, i)->bit_offset == bit_offset)
-            return infr_field(s, i);
+    for (i = 0; i < infr_field_count(m); i++) {
+        if (infr_field(m, i)->bit_offset == bit_offset)
+            return infr_field(m, i);
     }
     return NULL;
 }
@@ -155,95 +163,103 @@ static void test_analyze(void)
 {
     static const unsigned char r[2] = {0, 0};
     infr_session_t *s = NULL;
+    infr_model_t *m = (infr_model_t *)&m;
+    infr_model_t *again;
     const infr_field_t *f;
 
-    CHECK(infr_analyze(NULL) == INFR_ERR_ARG);
+    CHECK(infr_analyze(NULL, &m) == INFR_ERR_ARG && m == NULL);
     CHECK(infr_create(2, 4, NULL, &s) == INFR_OK);
+    CHECK(infr_analyze(s, NULL) == INFR_ERR_ARG);
     CHECK(infr_add(s, 0, r, 2) == INFR_OK);
-    CHECK(infr_analyze(s) == INFR_ERR_SAMPLES);
+    CHECK(infr_analyze(s, &m) == INFR_ERR_SAMPLES && m == NULL);
     infr_destroy(s);
 
     s = synth_session();
-    CHECK(infr_field_count(s) == 0);
-    CHECK(infr_analyze(s) == INFR_OK);
-    f = find_field(s, 0);
+    m = analyze(s);
+    f = find_field(m, 0);
     CHECK(f != NULL && f->kind == INFR_COUNTER && f->bit_size == 8 && f->step == 1);
-    f = find_field(s, 8);
+    f = find_field(m, 8);
     CHECK(f != NULL && f->kind == INFR_BUTTON && (f->flags & INFR_ACTIVE_LOW) && f->label == 1);
-    f = find_field(s, 16);
+    f = find_field(m, 16);
     CHECK(f != NULL && f->kind == INFR_AXIS && f->bit_size == 16 && (f->flags & INFR_BIG_ENDIAN));
     CHECK(f->label == 2 && f->rest == 2000 && f->logical_max <= 4000);
-    f = find_field(s, 32);
+    f = find_field(m, 32);
     CHECK(f != NULL && f->kind == INFR_HAT && f->bit_size == 4 && f->rest == 8 && f->label == 3);
     CHECK(f->usage_page == 0x01 && f->usage == 0x39);
-    f = find_field(s, 40);
+    f = find_field(m, 40);
     CHECK(f != NULL && f->kind == INFR_AXIS && f->bit_size == 8 && (f->flags & INFR_SIGNED));
     CHECK(f->label == 4 && (f->flags & INFR_NOISY) && f->noise == 1 && f->rest == 0);
-    f = find_field(s, 48);
+    f = find_field(m, 48);
     CHECK(f != NULL && f->kind == INFR_NOISE && f->bit_size == 1);
-    f = find_field(s, 56);
+    f = find_field(m, 56);
     CHECK(f != NULL && f->kind == INFR_CHECKSUM && f->algorithm == INFR_SUM8 && f->covered_len == 7);
+    f = find_field(m, 0);
     infr_destroy(s);
+    CHECK(find_field(m, 0) == f && f->kind == INFR_COUNTER);
+    s = synth_session();
+    again = analyze(s);
+    CHECK(again != m && infr_field_count(again) == infr_field_count(m));
+    infr_destroy(s);
+    infr_model_destroy(again);
+    infr_model_destroy(m);
+    infr_model_destroy(NULL);
 }
 
 static void test_field(void)
 {
     infr_session_t *s = synth_session();
+    infr_model_t *m = analyze(s);
     size_t i;
     size_t bits = 0;
 
-    CHECK(infr_field(s, 0) == NULL);
     CHECK(infr_field_count(NULL) == 0);
     CHECK(infr_field(NULL, 0) == NULL);
-    CHECK(infr_analyze(s) == INFR_OK);
-    for (i = 0; i < infr_field_count(s); i++) {
-        CHECK(infr_field(s, i)->bit_offset == bits);
-        bits += infr_field(s, i)->bit_size;
+    for (i = 0; i < infr_field_count(m); i++) {
+        CHECK(infr_field(m, i)->bit_offset == bits);
+        bits += infr_field(m, i)->bit_size;
     }
     CHECK(bits == REPORT_LEN * 8);
-    CHECK(infr_field(s, infr_field_count(s)) == NULL);
+    CHECK(infr_field(m, infr_field_count(m)) == NULL);
+    infr_model_destroy(m);
     infr_destroy(s);
 }
 
 static void test_set_usage(void)
 {
     infr_session_t *s = synth_session();
+    infr_model_t *m = analyze(s);
     const infr_field_t *f;
 
-    CHECK(infr_set_usage(NULL, 1, 9, 1) == INFR_ERR_ARG);
-    CHECK(infr_set_usage(s, 0, 9, 1) == INFR_ERR_ARG);
-    CHECK(infr_set_usage(s, 1, 0x10000, 1) == INFR_ERR_ARG);
-    CHECK(infr_set_usage(s, 1, 0x09, 5) == INFR_OK);
-    CHECK(infr_set_usage(s, 4, 0x01, 0x40) == INFR_OK);
-    CHECK(infr_set_usage(s, 4, 0x01, 0x33) == INFR_OK);
-    CHECK(infr_analyze(s) == INFR_OK);
-    f = find_field(s, 8);
-    CHECK(f->usage_page == 0x09 && f->usage == 5);
-    f = find_field(s, 40);
-    CHECK(f->usage_page == 0x01 && f->usage == 0x33);
-    f = find_field(s, 16);
-    CHECK(f->usage_page == 0x01 && f->usage == 0x30);
-    CHECK(infr_set_usage(s, 1, 0x09, 7) == INFR_OK);
-    CHECK(find_field(s, 8)->usage_page == 0x09 && find_field(s, 8)->usage == 7);
-    CHECK(infr_set_usage(s, 4, 0x01, 0x30) == INFR_OK);
-    CHECK(find_field(s, 40)->usage == 0x30 && find_field(s, 16)->usage != 0x30);
-    {
-        unsigned char out[REPORT_LEN] = {0};
-
-        CHECK(infr_normalize(s, out, REPORT_LEN, out, REPORT_LEN) != INFR_ERR_STATE);
-    }
     infr_destroy(s);
+    CHECK(find_field(m, 8)->usage_page == 0x09 && find_field(m, 8)->usage == 1);
+    CHECK(infr_set_usage(NULL, 1, 9, 1) == INFR_ERR_ARG);
+    CHECK(infr_set_usage(m, 0, 9, 1) == INFR_ERR_ARG);
+    CHECK(infr_set_usage(m, 1, 0x10000, 1) == INFR_ERR_ARG);
+    CHECK(infr_set_usage(m, 1, 0x09, 5) == INFR_OK);
+    CHECK(infr_set_usage(m, 4, 0x01, 0x40) == INFR_OK);
+    CHECK(infr_set_usage(m, 4, 0x01, 0x33) == INFR_OK);
+    f = find_field(m, 8);
+    CHECK(f->usage_page == 0x09 && f->usage == 5);
+    f = find_field(m, 40);
+    CHECK(f->usage_page == 0x01 && f->usage == 0x33);
+    f = find_field(m, 16);
+    CHECK(f->usage_page == 0x01 && f->usage == 0x30);
+    CHECK(infr_set_usage(m, 1, 0x09, 7) == INFR_OK);
+    CHECK(find_field(m, 8)->usage_page == 0x09 && find_field(m, 8)->usage == 7);
+    CHECK(infr_set_usage(m, 4, 0x01, 0x30) == INFR_OK);
+    CHECK(find_field(m, 40)->usage == 0x30 && find_field(m, 16)->usage != 0x30);
+    infr_model_destroy(m);
 }
 
 static void test_read(void)
 {
     static const unsigned char r[REPORT_LEN] = {9, 0xfe, 0x12, 0x34, 3, 0xff, 0x80, 0};
-    infr_session_t *s = synth_session();
-    infr_session_t *other = synth_session();
+    infr_session_t *ss = synth_session();
+    infr_model_t *s = analyze(ss);
+    infr_model_t *other = analyze(ss);
     int64_t v = 0;
 
-    CHECK(infr_read(s, find_field(s, 8), r, REPORT_LEN, &v) == INFR_ERR_ARG);
-    CHECK(infr_analyze(s) == INFR_OK && infr_analyze(other) == INFR_OK);
+    infr_destroy(ss);
     CHECK(infr_read(s, find_field(s, 8), r, REPORT_LEN, &v) == INFR_OK);
     CHECK(v == 1);
     CHECK(infr_read(s, find_field(s, 16), r, REPORT_LEN, &v) == INFR_OK && v == 0x1234);
@@ -252,18 +268,19 @@ static void test_read(void)
     CHECK(infr_read(s, find_field(other, 8), r, REPORT_LEN, &v) == INFR_ERR_ARG);
     CHECK(infr_read(s, find_field(s, 8), r, REPORT_LEN - 1, &v) == INFR_ERR_LEN);
     CHECK(infr_read(s, find_field(s, 8), r, REPORT_LEN, NULL) == INFR_ERR_ARG);
-    infr_destroy(other);
-    infr_destroy(s);
+    infr_model_destroy(other);
+    infr_model_destroy(s);
 }
 
 static void test_normalize(void)
 {
     static const unsigned char r[REPORT_LEN] = {9, 0xfe, 0x12, 0x34, 3, 0xff, 0x80, 0};
     unsigned char out[REPORT_LEN];
-    infr_session_t *s = synth_session();
+    infr_session_t *ss = synth_session();
+    infr_model_t *s = analyze(ss);
 
-    CHECK(infr_normalize(s, r, REPORT_LEN, out, REPORT_LEN) == INFR_ERR_STATE);
-    CHECK(infr_analyze(s) == INFR_OK);
+    infr_destroy(ss);
+    CHECK(infr_normalize(NULL, r, REPORT_LEN, out, REPORT_LEN) == INFR_ERR_ARG);
     CHECK(infr_normalize(s, r, REPORT_LEN - 1, out, REPORT_LEN) == INFR_ERR_LEN);
     CHECK(infr_normalize(s, r, REPORT_LEN, out, REPORT_LEN - 1) == INFR_ERR_SPACE);
     CHECK(infr_normalize(s, r, REPORT_LEN, out, REPORT_LEN) == INFR_OK);
@@ -271,7 +288,7 @@ static void test_normalize(void)
     memcpy(out, r, REPORT_LEN);
     CHECK(infr_normalize(s, out, REPORT_LEN, out, REPORT_LEN) == INFR_OK);
     CHECK(out[2] == 0x34 && out[3] == 0x12);
-    infr_destroy(s);
+    infr_model_destroy(s);
 }
 
 static void test_descriptor(void)
@@ -280,10 +297,10 @@ static void test_descriptor(void)
     unsigned char buf[512];
     size_t len = 0;
     size_t need = 0;
-    infr_session_t *s = synth_session();
+    infr_session_t *ss = synth_session();
+    infr_model_t *s = analyze(ss);
 
-    CHECK(infr_descriptor(s, buf, sizeof(buf), &len) == INFR_ERR_STATE);
-    CHECK(infr_analyze(s) == INFR_OK);
+    infr_destroy(ss);
     CHECK(infr_descriptor(NULL, buf, sizeof(buf), &len) == INFR_ERR_ARG);
     CHECK(infr_descriptor(s, NULL, 4, &len) == INFR_ERR_ARG);
     CHECK(infr_descriptor(s, NULL, 0, &need) == INFR_ERR_SPACE);
@@ -291,7 +308,7 @@ static void test_descriptor(void)
     CHECK(infr_descriptor(s, buf, need - 1, &len) == INFR_ERR_SPACE && len == need);
     CHECK(infr_descriptor(s, buf, sizeof(buf), &len) == INFR_OK && len == need);
     CHECK(memcmp(buf, head, sizeof(head)) == 0 && buf[len - 1] == 0xc0);
-    infr_destroy(s);
+    infr_model_destroy(s);
 }
 
 static void add_two_reports(infr_session_t *s, size_t i)
@@ -318,23 +335,25 @@ static void test_report_id(void)
     unsigned char out[3];
     size_t len = 0;
     infr_session_t *s = NULL;
+    infr_model_t *m = NULL;
     size_t i;
 
     CHECK(infr_create(3, 200, &ids, &s) == INFR_OK);
-    CHECK(infr_analyze(s) == INFR_ERR_SAMPLES);
+    CHECK(infr_analyze(s, &m) == INFR_ERR_SAMPLES);
     for (i = 0; i < 200; i++)
         add_two_reports(s, i);
     CHECK(infr_add(s, INFR_FREE, bad_len, 2) == INFR_ERR_LEN);
     CHECK(infr_add(s, INFR_FREE, zero, 2) == INFR_ERR_ARG);
     CHECK(infr_add(s, INFR_FREE, buf, 4) == INFR_ERR_LEN);
-    CHECK(infr_analyze(s) == INFR_OK);
-    CHECK(infr_field(s, 0)->report_id == 5 && infr_field(s, 0)->kind == INFR_CONSTANT);
-    CHECK(infr_field(s, infr_field_count(s) - 1)->report_id == 7);
-    CHECK(infr_descriptor(s, buf, sizeof(buf), &len) == INFR_OK);
+    m = analyze(s);
+    CHECK(infr_field(m, 0)->report_id == 5 && infr_field(m, 0)->kind == INFR_CONSTANT);
+    CHECK(infr_field(m, infr_field_count(m) - 1)->report_id == 7);
+    CHECK(infr_descriptor(m, buf, sizeof(buf), &len) == INFR_OK);
     CHECK(buf[6] == 0x85 && buf[7] == 0x05);
     CHECK(memchr(buf + 8, 0x85, len - 8) != NULL && ((unsigned char *)memchr(buf + 8, 0x85, len - 8))[1] == 0x07);
-    CHECK(infr_normalize(s, other, 2, out, sizeof(out)) == INFR_ERR_LEN);
-    CHECK(infr_normalize(s, bad_len, 2, out, sizeof(out)) == INFR_ERR_LEN);
+    CHECK(infr_normalize(m, other, 2, out, sizeof(out)) == INFR_ERR_LEN);
+    CHECK(infr_normalize(m, bad_len, 2, out, sizeof(out)) == INFR_ERR_LEN);
+    infr_model_destroy(m);
     CHECK(infr_report_count(s) == 2);
     {
         unsigned id = 0;
@@ -346,12 +365,13 @@ static void test_report_id(void)
         CHECK(infr_report_info(s, 0, NULL, NULL, NULL) == INFR_OK);
     }
     CHECK(infr_add(s, INFR_FREE, other, 2) == INFR_OK);
-    CHECK(infr_analyze(s) == INFR_OK);
-    CHECK(infr_field(s, infr_field_count(s) - 1)->report_id == 7);
-    CHECK(infr_normalize(s, other, 2, out, sizeof(out)) == INFR_ERR_LEN);
-    CHECK(infr_descriptor(s, buf, sizeof(buf), &len) == INFR_OK);
+    m = analyze(s);
+    CHECK(infr_field(m, infr_field_count(m) - 1)->report_id == 7);
+    CHECK(infr_normalize(m, other, 2, out, sizeof(out)) == INFR_ERR_LEN);
+    CHECK(infr_descriptor(m, buf, sizeof(buf), &len) == INFR_OK);
     for (i = 0; i + 1 < len; i++)
         CHECK(!(buf[i] == 0x85 && buf[i + 1] == 0x09));
+    infr_model_destroy(m);
     for (i = 10; i < 10 + INFR_MAX_REPORTS - 3; i++) {
         buf[0] = (unsigned char)i;
         CHECK(infr_add(s, INFR_FREE, buf, 1) == INFR_OK);
@@ -412,6 +432,7 @@ static void check_algorithm(unsigned algorithm, size_t offset)
     infr_session_t *s = NULL;
     synth_t st = {7, 0, 0, 0};
     const infr_field_t *f;
+    infr_model_t *m;
     size_t i;
     size_t j;
 
@@ -423,9 +444,10 @@ static void check_algorithm(unsigned algorithm, size_t offset)
         fill_checksum(algorithm, r);
         CHECK(infr_add(s, INFR_FREE, r, sizeof(r)) == INFR_OK);
     }
-    CHECK(infr_analyze(s) == INFR_OK);
-    f = find_field(s, offset);
+    m = analyze(s);
+    f = find_field(m, offset);
     CHECK(f != NULL && f->kind == INFR_CHECKSUM && f->algorithm == algorithm);
+    infr_model_destroy(m);
     infr_destroy(s);
 }
 
@@ -436,10 +458,11 @@ static void test_checksums(void)
     check_algorithm(INFR_CRC32, 40);
 }
 
-static infr_session_t *walk_session(size_t len, void (*fill)(synth_t *, size_t, unsigned char *))
+static infr_model_t *walk_model(size_t len, void (*fill)(synth_t *, size_t, unsigned char *))
 {
     unsigned char r[16];
     infr_session_t *s = NULL;
+    infr_model_t *m;
     synth_t st = {3, 0, 0, 0};
     size_t i;
 
@@ -449,8 +472,9 @@ static infr_session_t *walk_session(size_t len, void (*fill)(synth_t *, size_t, 
         fill(&st, i, r);
         CHECK(infr_add(s, i < 100 ? INFR_REST : INFR_FREE, r, len) == INFR_OK);
     }
-    CHECK(infr_analyze(s) == INFR_OK);
-    return s;
+    m = analyze(s);
+    infr_destroy(s);
+    return m;
 }
 
 static void fill_xor_tail(synth_t *st, size_t i, unsigned char *r)
@@ -491,16 +515,16 @@ static void fill_step3(synth_t *st, size_t i, unsigned char *r)
 
 static void test_checksum_false_positives(void)
 {
-    infr_session_t *s = walk_session(5, fill_xor_tail);
+    infr_model_t *s = walk_model(5, fill_xor_tail);
     const infr_field_t *f = find_field(s, 32);
 
     CHECK(f != NULL && f->kind == INFR_CHECKSUM && f->algorithm == INFR_XOR8);
     CHECK(find_field(s, 8) != NULL && find_field(s, 8)->kind == INFR_BUTTON);
     CHECK(find_field(s, 16) != NULL && find_field(s, 16)->kind == INFR_AXIS);
-    infr_destroy(s);
-    s = walk_session(2, fill_twin_bytes);
+    infr_model_destroy(s);
+    s = walk_model(2, fill_twin_bytes);
     CHECK(find_field(s, 0)->kind == INFR_AXIS && find_field(s, 8)->kind == INFR_AXIS);
-    infr_destroy(s);
+    infr_model_destroy(s);
 }
 
 static void test_wide_axis(void)
@@ -508,7 +532,7 @@ static void test_wide_axis(void)
     static const unsigned char range[] = {0x17, 0x00, 0x00, 0x00, 0x80, 0x27, 0xff, 0xff, 0xff, 0x7f};
     unsigned char buf[128];
     size_t len = 0;
-    infr_session_t *s = walk_session(4, fill_wide);
+    infr_model_t *s = walk_model(4, fill_wide);
     const infr_field_t *f = find_field(s, 0);
 
     CHECK(f != NULL && f->kind == INFR_AXIS && f->bit_size == 32 && (f->flags & INFR_SIGNED));
@@ -516,22 +540,23 @@ static void test_wide_axis(void)
     CHECK(infr_descriptor(s, buf, sizeof(buf), &len) == INFR_OK);
     CHECK(len > sizeof(range));
     CHECK(memcmp(buf + 8, range, sizeof(range)) == 0);
-    infr_destroy(s);
+    infr_model_destroy(s);
 }
 
 static void test_counter_step(void)
 {
-    infr_session_t *s = walk_session(2, fill_step3);
+    infr_model_t *s = walk_model(2, fill_step3);
     const infr_field_t *f = find_field(s, 0);
 
     CHECK(f != NULL && f->kind == INFR_COUNTER && f->bit_size == 8 && f->step == 3);
-    infr_destroy(s);
+    infr_model_destroy(s);
 }
 
 static void test_label_limit(void)
 {
     static const unsigned char r[1] = {0};
     infr_session_t *s = NULL;
+    infr_model_t *m;
     int label;
 
     CHECK(infr_create(1, 200, NULL, &s) == INFR_OK);
@@ -540,11 +565,13 @@ static void test_label_limit(void)
     CHECK(infr_add(s, INFR_MAX_LABELS + 1, r, 1) == INFR_ERR_FULL);
     CHECK(infr_add(s, 1, r, 1) == INFR_OK);
     CHECK(infr_add(s, INFR_REST, r, 1) == INFR_OK);
-    CHECK(infr_set_usage(s, 1, 0, 1) == INFR_ERR_ARG);
+    m = analyze(s);
+    CHECK(infr_set_usage(m, 1, 0, 1) == INFR_ERR_ARG);
     for (label = 1; label <= INFR_MAX_HINTS; label++)
-        CHECK(infr_set_usage(s, label, 0x09, (uint32_t)label) == INFR_OK);
-    CHECK(infr_set_usage(s, INFR_MAX_HINTS + 1, 0x09, 1) == INFR_ERR_FULL);
-    CHECK(infr_set_usage(s, 1, 0x09, 7) == INFR_OK);
+        CHECK(infr_set_usage(m, label, 0x09, (uint32_t)label) == INFR_OK);
+    CHECK(infr_set_usage(m, INFR_MAX_HINTS + 1, 0x09, 1) == INFR_ERR_FULL);
+    CHECK(infr_set_usage(m, 1, 0x09, 7) == INFR_OK);
+    infr_model_destroy(m);
     infr_destroy(s);
 }
 
@@ -563,7 +590,7 @@ static void test_label_limit_new_report(void)
     }
     CHECK(infr_add(s, INFR_MAX_LABELS + 1, b, 2) == INFR_ERR_FULL);
     CHECK(infr_report_count(s) == 1);
-    CHECK(infr_analyze(s) == INFR_OK);
+    infr_model_destroy(analyze(s));
     infr_destroy(s);
 }
 
@@ -571,6 +598,7 @@ static void test_hat_rest_15(void)
 {
     unsigned char r[1];
     infr_session_t *s = NULL;
+    infr_model_t *m;
     size_t i;
     int with_eight;
 
@@ -580,8 +608,9 @@ static void test_hat_rest_15(void)
             r[0] = (unsigned char)(i < 100 || i % 30 >= 20 ? 0x0f : (i / 30) % (8u + (unsigned)with_eight));
             CHECK(infr_add(s, i < 100 ? INFR_REST : 1, r, 1) == INFR_OK);
         }
-        CHECK(infr_analyze(s) == INFR_OK);
-        CHECK((find_field(s, 0)->kind == INFR_HAT) == !with_eight);
+        m = analyze(s);
+        CHECK((find_field(m, 0)->kind == INFR_HAT) == !with_eight);
+        infr_model_destroy(m);
         infr_destroy(s);
     }
 }
@@ -606,6 +635,7 @@ static void test_alloc_failure(void)
         failing_alloc_t fa = {n, 0};
         infr_options_t options = {0, failing_alloc, failing_free, NULL};
         infr_session_t *s = NULL;
+        infr_model_t *m = NULL;
         int status;
 
         options.alloc_ctx = &fa;
@@ -614,15 +644,17 @@ static void test_alloc_failure(void)
         if (status == INFR_OK) {
             CHECK(infr_add(s, 0, r, 4) == INFR_OK);
             CHECK(infr_add(s, 0, r, 4) == INFR_OK);
-            CHECK(infr_analyze(s) == INFR_OK);
+            status = infr_analyze(s, &m);
+            CHECK(status == INFR_OK || (status == INFR_ERR_NOMEM && m == NULL));
         }
+        infr_model_destroy(m);
         infr_destroy(s);
         CHECK(fa.live == 0);
         if (status == INFR_OK)
             break;
-        CHECK(status == INFR_ERR_NOMEM && s == NULL);
+        CHECK(status == INFR_ERR_NOMEM);
     }
-    CHECK(n > 1);
+    CHECK(n > 3);
 }
 
 int main(void)

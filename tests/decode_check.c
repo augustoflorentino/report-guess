@@ -9,7 +9,7 @@
 #define MAX_REPORT (MAX_LINE / 2)
 
 typedef struct {
-    const infr_session_t *session;
+    const infr_model_t *session;
     const unsigned char *raw;
     size_t raw_len;
     size_t checked;
@@ -55,7 +55,7 @@ static int32_t expected_value(const unsigned char *r, const infr_field_t *f)
     return (int32_t)((int64_t)(v ^ sign) - (int64_t)sign);
 }
 
-static const infr_field_t *field_at(const infr_session_t *s, unsigned report_id, size_t bit_offset)
+static const infr_field_t *field_at(const infr_model_t *s, unsigned report_id, size_t bit_offset)
 {
     size_t i;
 
@@ -83,13 +83,14 @@ static int on_value(void *opaque, const hidp_value_t *v)
     return 0;
 }
 
-static infr_session_t *load(FILE *f, unsigned flags)
+static infr_model_t *load(FILE *f, unsigned flags)
 {
     static char line[MAX_LINE];
     static char hex[MAX_LINE];
     static unsigned char report[MAX_REPORT];
     infr_options_t options = {0, NULL, NULL, NULL};
     infr_session_t *s = NULL;
+    infr_model_t *m = NULL;
     int label;
 
     options.flags = flags;
@@ -104,13 +105,13 @@ static infr_session_t *load(FILE *f, unsigned flags)
         if (infr_add(s, label, report, len) != INFR_OK)
             break;
     }
-    if (s != NULL && infr_analyze(s) == INFR_OK)
-        return s;
+    if (s != NULL)
+        infr_analyze(s, &m);
     infr_destroy(s);
-    return NULL;
+    return m;
 }
 
-static hidp_desc_t *describe(const infr_session_t *s)
+static hidp_desc_t *describe(const infr_model_t *s)
 {
     hidp_parse_options_t strict = {HIDP_PARSE_STRICT, NULL, NULL, NULL};
     static unsigned char desc[65536];
@@ -125,7 +126,7 @@ static hidp_desc_t *describe(const infr_session_t *s)
     return d;
 }
 
-static int replay(FILE *f, const infr_session_t *s, const hidp_desc_t *d, size_t *out_checked)
+static int replay(FILE *f, const infr_model_t *s, const hidp_desc_t *d, size_t *out_checked)
 {
     static char line[MAX_LINE];
     static char hex[MAX_LINE];
@@ -155,7 +156,7 @@ static int replay(FILE *f, const infr_session_t *s, const hidp_desc_t *d, size_t
 int main(int argc, char **argv)
 {
     FILE *f;
-    infr_session_t *s;
+    infr_model_t *s;
     hidp_desc_t *d = NULL;
     size_t checked = 0;
     int ok = 0;
@@ -173,7 +174,7 @@ int main(int argc, char **argv)
     }
     fclose(f);
     hidp_desc_destroy(d);
-    infr_destroy(s);
+    infr_model_destroy(s);
     printf("%zu values checked\n", checked);
     return ok && checked > 0 ? 0 : 1;
 }
