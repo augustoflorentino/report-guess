@@ -1,4 +1,4 @@
-# infer
+# report-guess
 
 Infer the field layout of undocumented binary reports, such as those of a gamepad that speaks
 raw HID without a usable descriptor, and emit a HID report descriptor that describes them.
@@ -49,24 +49,24 @@ cmake --install build --prefix /usr/local
 Use it from CMake:
 
 ```cmake
-find_package(infer REQUIRED)
-target_link_libraries(app PRIVATE infer::infer)
+find_package(report-guess REQUIRED)
+target_link_libraries(app PRIVATE report-guess::report-guess)
 ```
 
 Or with pkg-config:
 
 ```sh
-cc app.c $(pkg-config --cflags --libs infer)
+cc app.c $(pkg-config --cflags --libs report-guess)
 ```
 
 ## Single-file form
 
-`scripts/amalgamate.sh` writes `dist/infer/infer.h`. Copy it into your project and, in exactly
+`scripts/amalgamate.sh` writes `dist/report-guess/report-guess.h`. Copy it into your project and, in exactly
 one `.c` file:
 
 ```c
 #define INFR_IMPLEMENTATION
-#include "infer/infer.h"
+#include "report-guess/report-guess.h"
 ```
 
 Define `INFR_STATIC` as well to keep every function private to that file.
@@ -76,7 +76,7 @@ Define `INFR_STATIC` as well to keep every function private to that file.
 See [`examples/basic.c`](examples/basic.c), and
 [`examples/samples.c`](examples/samples.c) for a tool that reads a samples file (one report per
 line: label, then the report in hex; lines starting with `#` are skipped) and prints the layout
-and the descriptor (`infer_samples file ids` for reports that start with a report ID). The header `include/infer/infer.h` is the
+and the descriptor (`infer_samples file ids` for reports that start with a report ID). The header `include/report-guess/report-guess.h` is the
 API reference.
 
 Conventions:

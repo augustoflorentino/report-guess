@@ -1,5 +1,5 @@
 #define INFR_IMPLEMENTATION
-#include "infer/infer.h"
+#include "report-guess/report-guess.h"
 
 int main(void)
 {

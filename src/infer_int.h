@@ -1,7 +1,7 @@
 #ifndef INFER_INT_H
 #define INFER_INT_H
 
-#include "infer/infer.h"
+#include "report-guess/report-guess.h"
 
 #if defined(INFR_IMPLEMENTATION_DONE)
 #define INFR_INTERNAL static

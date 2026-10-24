@@ -1,5 +1,5 @@
-#ifndef INFER_H
-#define INFER_H
+#ifndef REPORT_GUESS_H
+#define REPORT_GUESS_H
 
 #include <stddef.h>
 #include <stdint.h>

@@ -7,8 +7,8 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "BUILD_SHARED_LIBS": "ON",
-        "INFER_BUILD_TESTS": "ON",
-        "INFER_BUILD_EXAMPLES": "ON",
+        "REPORT_GUESS_BUILD_TESTS": "ON",
+        "REPORT_GUESS_BUILD_EXAMPLES": "ON",
         "CMAKE_C_FLAGS": "-g -Wall -Wextra -Werror -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
       }
     },
@@ -17,8 +17,8 @@
       "binaryDir": "${sourceDir}/build/msvc",
       "cacheVariables": {
         "BUILD_SHARED_LIBS": "ON",
-        "INFER_BUILD_TESTS": "ON",
-        "INFER_BUILD_EXAMPLES": "ON",
+        "REPORT_GUESS_BUILD_TESTS": "ON",
+        "REPORT_GUESS_BUILD_EXAMPLES": "ON",
         "CMAKE_C_FLAGS": "/W4 /WX"
       }
     },
@@ -28,7 +28,7 @@
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_BUILD_TYPE": "Debug",
-        "INFER_BUILD_FUZZ": "ON",
+        "REPORT_GUESS_BUILD_FUZZ": "ON",
         "CMAKE_C_FLAGS": "-g -fsanitize=fuzzer-no-link,address,undefined"
       }
     },

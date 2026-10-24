@@ -1,4 +1,4 @@
-#include <infer/infer.h>
+#include <report-guess/report-guess.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -93,7 +93,7 @@ int main(int argc, char **argv)
         status = print_descriptor(m);
     }
     if (status != INFR_OK)
-        fprintf(stderr, "infer: %s\n", infr_strerror(status));
+        fprintf(stderr, "report-guess: %s\n", infr_strerror(status));
     infr_model_destroy(m);
     if (f != stdin)
         fclose(f);

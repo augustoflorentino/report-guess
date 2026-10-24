@@ -39,7 +39,7 @@ jobs:
       - if: runner.os != 'Windows'
         run: |
           export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig:$PREFIX/lib64/pkgconfig"
-          cc examples/basic.c $(pkg-config --cflags --libs infer) -Wl,-rpath,"$PREFIX/lib" -o basic-pc
+          cc examples/basic.c $(pkg-config --cflags --libs report-guess) -Wl,-rpath,"$PREFIX/lib" -o basic-pc
           ./basic-pc
 
   sanitizers:
@@ -65,8 +65,8 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y abigail-tools
       - run: cmake --preset abi
       - run: cmake --build build/abi
-      - run: scripts/symbols.sh build/abi/libinfer.so include/infer/infer.h
-      - run: scripts/abi.sh check build/abi/libinfer.so
+      - run: scripts/symbols.sh build/abi/libreport-guess.so include/report-guess/report-guess.h
+      - run: scripts/abi.sh check build/abi/libreport-guess.so
 
   single-file:
     runs-on: ubuntu-latest

@@ -6,11 +6,11 @@ export LC_ALL=C
 mode=$1
 lib=$2
 root=$(cd "$(dirname "$0")/.." && pwd)
-baseline=$root/abi/infer.abi
+baseline=$root/abi/report-guess.abi
 
-major=$(sed -n 's/^project(infer VERSION \([0-9]*\)\..*/\1/p' "$root/CMakeLists.txt")
+major=$(sed -n 's/^project(report-guess VERSION \([0-9]*\)\..*/\1/p' "$root/CMakeLists.txt")
 soname=$(readelf -d "$lib" | sed -n 's/.*Library soname: \[\(.*\)\]/\1/p')
-if [ "$soname" != "libinfer.so.$major" ]; then
+if [ "$soname" != "libreport-guess.so.$major" ]; then
     echo "soname $soname does not match major version $major" >&2
     exit 1
 fi

@@ -4,6 +4,21 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 3.1.1 - 2026-10-23
+
+- renamed: the library is now report-guess, to avoid clashing with Facebook Infer. The API, the
+  `infr_` prefix and the ABI are unchanged
+
+Upgrading:
+
+- include `<report-guess/report-guess.h>` instead of `<infer/infer.h>`
+- CMake: `find_package(report-guess)` and link `report-guess::report-guess`
+- pkg-config: `report-guess`; link with `-lreport-guess`; the shared library is `libreport-guess.so.3`
+- single file: `dist/report-guess/report-guess.h`
+- CMake options are `REPORT_GUESS_BUILD_TESTS`, `REPORT_GUESS_BUILD_EXAMPLES` and `REPORT_GUESS_BUILD_FUZZ`
+- remove an installed infer 3.x (`libinfer.so.3`, `include/infer`, `lib/cmake/infer`,
+  `infer.pc`) after relinking
+
 ## 3.1.0 - 2026-10-23
 
 - added: `infr_model_report_count` and `infr_model_report_info` list the reports a model
