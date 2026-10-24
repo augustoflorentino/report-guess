@@ -4,6 +4,14 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 3.1.0 - 2026-10-23
+
+- added: `infr_model_report_count` and `infr_model_report_info` list the reports a model
+  describes, with their ID and length, so a program that keeps only the model can size its
+  buffers and route reports without the session
+
+Updating: no code changes needed.
+
 ## 3.0.0 - 2026-10-23
 
 - changed: `infr_analyze(session, &model)` returns a new `infr_model_t` holding the inferred
