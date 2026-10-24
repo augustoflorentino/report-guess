@@ -4,7 +4,8 @@ Infer the field layout of undocumented binary reports, such as those of a gamepa
 raw HID without a usable descriptor, and emit a HID report descriptor that describes them.
 
 Record reports while the device rests and while you perform known actions, label each report
-with the action, and `infr_analyze` finds:
+with the action, and `infr_analyze` turns that session into a model (`infr_model_t`) that holds
+what it found:
 
 - rest noise: bits and fields that change while nothing is touched
 - buttons: single bits, active-high or active-low
@@ -12,6 +13,9 @@ with the action, and `infr_analyze` finds:
 - hats: 4-bit direction fields with a null state
 - counters (fixed step or timestamp-like), checksums (sum8, xor8, crc8, crc8 Maxim, crc32 with
   an optional seed byte) and constant runs
+
+The model does not depend on the session: destroy the session (and its sample buffers) once the
+model exists, and keep only the model to normalize, read and describe reports at run time.
 
 Each field gets the label of the action that moves it most, and a HID usage (buttons on the
 Button page, axes on Generic Desktop X..Wheel, hats as Hat Switch) that `infr_set_usage` can
@@ -26,11 +30,12 @@ session created with `INFR_REPORT_IDS` in `infr_options_t.flags`. `infr_add` rou
 by its first byte, each report ID keeps its own length (up to the `report_len` given to
 `infr_create`) and its own layout, `infr_field` lists the fields of every report in ID order,
 and `infr_descriptor` writes one input report per ID. `infr_report_count` and `infr_report_info`
-list the report IDs seen so far with their length and sample count.
+list the report IDs seen so far with their length and sample count. A report ID with fewer than
+two samples is left out of the model.
 
 All memory is allocated by `infr_create`, except in `INFR_REPORT_IDS` sessions, where the first
-report of each ID allocates that report's buffers (`max_samples` reports each); analysis never
-allocates.
+report of each ID allocates that report's buffers (`max_samples` reports each), and by
+`infr_analyze`, which allocates the model (its fields only, no samples).
 
 ## Build and install
 
@@ -76,7 +81,8 @@ API reference.
 Conventions:
 
 - every function that can fail returns `INFR_OK` or an error code; `infr_strerror` describes it
-- what `infr_create` returns is released only by `infr_destroy`, which accepts `NULL`
+- what `infr_create` returns is released only by `infr_destroy`, and what `infr_analyze` returns
+  only by `infr_model_destroy`; both accept `NULL`
 - functions never take ownership of their arguments; returned pointers belong to the library
 - pass an `infr_options_t` with your allocator to `infr_create`, or `NULL` for `malloc`/`free`
 
@@ -84,7 +90,7 @@ Labels: `INFR_REST` (0) marks reports taken with the device untouched, `INFR_FRE
 of free use, and positive numbers one action each. A field moved by no particular action has
 label `INFR_NO_LABEL`.
 
-Fields (`infr_field_t`, layout fixed for the 2.x series):
+Fields (`infr_field_t`, layout fixed for the 3.x series):
 
 | member | meaning |
 |---|---|
@@ -103,7 +109,7 @@ Limits:
 
 - at most `INFR_MAX_LABELS` (64) distinct positive labels per session; `infr_add` returns
   `INFR_ERR_FULL` past that
-- at most `INFR_MAX_HINTS` usages set with `infr_set_usage`; usage page 0 is rejected
+- at most `INFR_MAX_HINTS` usages set with `infr_set_usage` per model; usage page 0 is rejected
 - one checksum per report, which must be the last bytes it covers
 - hats use values 0 to 7 plus one rest value of 8 or 15
 - fields up to 32 bits; 32-bit axes are always signed
