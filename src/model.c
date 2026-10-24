@@ -174,3 +174,20 @@ int infr_read(const infr_model_t *model, const infr_field_t *field, const unsign
     *out_value = (field->flags & INFR_SIGNED) ? ((int64_t)raw ^ sign) - sign : (int64_t)raw;
     return INFR_OK;
 }
+
+size_t infr_model_report_count(const infr_model_t *model)
+{
+    return model != NULL ? model->layout_count : 0;
+}
+
+int infr_model_report_info(const infr_model_t *model, size_t index, unsigned *out_report_id,
+                           size_t *out_report_len)
+{
+    if (model == NULL || index >= model->layout_count)
+        return INFR_ERR_ARG;
+    if (out_report_id != NULL)
+        *out_report_id = model->layouts[index]->report_id;
+    if (out_report_len != NULL)
+        *out_report_len = model->layouts[index]->report_len;
+    return INFR_OK;
+}

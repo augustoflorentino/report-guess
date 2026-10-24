@@ -112,6 +112,9 @@ INFR_API int infr_normalize(const infr_model_t *model, const unsigned char *repo
                             size_t report_len, unsigned char *out, size_t out_len);
 INFR_API int infr_descriptor(const infr_model_t *model, unsigned char *out, size_t out_len,
                              size_t *out_written);
+INFR_API size_t infr_model_report_count(const infr_model_t *model);
+INFR_API int infr_model_report_info(const infr_model_t *model, size_t index, unsigned *out_report_id,
+                                    size_t *out_report_len);
 INFR_API int infr_read(const infr_model_t *model, const infr_field_t *field,
                        const unsigned char *report, size_t report_len, int64_t *out_value);
 INFR_API const char *infr_strerror(int status);

@@ -220,6 +220,13 @@ static void test_field(void)
     }
     CHECK(bits == REPORT_LEN * 8);
     CHECK(infr_field(m, infr_field_count(m)) == NULL);
+    {
+        unsigned id = 9;
+        size_t rlen = 0;
+
+        CHECK(infr_model_report_count(m) == 1);
+        CHECK(infr_model_report_info(m, 0, &id, &rlen) == INFR_OK && id == 0 && rlen == REPORT_LEN);
+    }
     infr_model_destroy(m);
     infr_destroy(s);
 }
@@ -367,6 +374,18 @@ static void test_report_id(void)
     CHECK(infr_add(s, INFR_FREE, other, 2) == INFR_OK);
     m = analyze(s);
     CHECK(infr_field(m, infr_field_count(m) - 1)->report_id == 7);
+    CHECK(infr_report_count(s) == 3 && infr_model_report_count(m) == 2);
+    {
+        unsigned id = 0;
+        size_t rlen = 0;
+
+        CHECK(infr_model_report_info(m, 0, &id, &rlen) == INFR_OK && id == 5 && rlen == 3);
+        CHECK(infr_model_report_info(m, 1, &id, &rlen) == INFR_OK && id == 7 && rlen == 2);
+        CHECK(infr_model_report_info(m, 2, &id, &rlen) == INFR_ERR_ARG);
+        CHECK(infr_model_report_info(NULL, 0, NULL, NULL) == INFR_ERR_ARG);
+        CHECK(infr_model_report_info(m, 1, NULL, NULL) == INFR_OK);
+    }
+    CHECK(infr_model_report_count(NULL) == 0);
     CHECK(infr_normalize(m, other, 2, out, sizeof(out)) == INFR_ERR_LEN);
     CHECK(infr_descriptor(m, buf, sizeof(buf), &len) == INFR_OK);
     for (i = 0; i + 1 < len; i++)
