@@ -4,6 +4,16 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 2.2.1 - 2026-10-23
+
+- fixed: in a report ID session, `infr_add` rejecting a 65th label for a new report ID left an
+  empty report behind, and every later `infr_analyze` failed with `INFR_ERR_SAMPLES`
+- fixed: a report ID seen only once made `infr_analyze` fail for the whole session; such IDs
+  are now left out of the fields and the descriptor, and `infr_normalize` treats them as
+  unknown, until they have two samples
+
+Updating: no code changes needed.
+
 ## 2.2.0 - 2026-10-19
 
 - added: `infr_read` gives the value of one field in a raw report, with sign, byte order and
