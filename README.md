@@ -3,6 +3,11 @@
 Infer the field layout of undocumented binary reports, such as those of a gamepad that speaks
 raw HID without a usable descriptor, and emit a HID report descriptor that describes them.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/converge-dark.gif">
+  <img src="docs/images/converge-light.gif" alt="examples/samples.c run on a growing share of a labeled Ninja Sword session: constants turn into buttons and axes as each action is added" width="680">
+</picture>
+
 Record reports while the device rests and while you perform known actions, label each report
 with the action, and `infr_analyze` turns that session into a model (`infr_model_t`) that holds
 what it found:
