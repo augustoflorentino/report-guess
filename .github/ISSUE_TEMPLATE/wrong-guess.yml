@@ -1,0 +1,40 @@
+name: Wrong guess
+description: The layout report-guess found does not match the device
+labels: [wrong-guess]
+body:
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      description: Name, USB or Bluetooth ids, and the mode it was in
+      placeholder: DualShock 4, 054c:09cc, Bluetooth
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: report-guess version
+      placeholder: 4.0.0
+  - type: textarea
+    id: samples
+    attributes:
+      label: Samples
+      description: The session in the samples format (label, then the report in hex, one per line), or a link to it
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: guessed
+    attributes:
+      label: What it guessed
+      description: Output of infer_samples on that file
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: The real layout
+      description: Which bits are which control, from the device descriptor, a driver or your own testing
+    validations:
+      required: true
