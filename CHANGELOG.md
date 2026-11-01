@@ -4,6 +4,25 @@ Each release lists what changed, what updating means for existing code, and ever
 
 ## Unreleased
 
+## 4.0.0 - 2026-10-31
+
+- breaking: `infr_field_t.logical_min`, `logical_max`, `rest` and `noise` are `int64_t`. A
+  32-bit counter now reports its real wrap value 4294967295 instead of `INT32_MAX`, and a 32-bit
+  unsigned field reports values above `INT32_MAX` without truncation
+- fixed: 32-bit axes are no longer forced to signed; an unsigned 32-bit axis gets Logical
+  Minimum 0 and Logical Maximum 0xffffffff in the descriptor, which Linux and hid-parser read as
+  unsigned
+- `noise` is no longer clamped to `INT32_MAX`
+- `infr_field_t` is 104 bytes on 64-bit, fixed for 4.x
+- SONAME is now `libreport-guess.so.4`
+
+Upgrading from 3.x:
+
+- code that stores `logical_min`, `logical_max`, `rest` or `noise` in an `int` or `int32_t` must
+  use `int64_t`; printf formats need `%lld` with a `long long` cast (or `PRId64`)
+- code that relied on 32-bit axes always having `INFR_SIGNED` must read the flag
+- relink: the ABI changed
+
 ## 3.1.1 - 2026-10-23
 
 - renamed: the library is now report-guess, to avoid clashing with Facebook Infer. The API, the

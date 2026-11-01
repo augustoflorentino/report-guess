@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(report-guess VERSION 3.1.1 DESCRIPTION "Infer the field layout of undocumented binary reports and emit a HID descriptor" LANGUAGES C)
+project(report-guess VERSION 4.0.0 DESCRIPTION "Infer the field layout of undocumented binary reports and emit a HID descriptor" LANGUAGES C)
 
 option(REPORT_GUESS_BUILD_TESTS "Build tests" OFF)
 option(REPORT_GUESS_BUILD_EXAMPLES "Build examples" OFF)
