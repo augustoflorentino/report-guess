@@ -525,6 +525,27 @@ static void fill_wide(synth_t *st, size_t i, unsigned char *r)
     r[3] = (unsigned char)(v >> 24);
 }
 
+static void put32(unsigned char *r, uint32_t v)
+{
+    r[0] = (unsigned char)v;
+    r[1] = (unsigned char)(v >> 8);
+    r[2] = (unsigned char)(v >> 16);
+    r[3] = (unsigned char)(v >> 24);
+}
+
+static void fill_wide_unsigned(synth_t *st, size_t i, unsigned char *r)
+{
+    st->tilt += i < 100 ? 0 : (int)synth_rand(st, 2001) - 1000;
+    put32(r, 0x80000000u + (uint32_t)st->tilt);
+}
+
+static void fill_counter32(synth_t *st, size_t i, unsigned char *r)
+{
+    (void)st;
+    put32(r, 0xfffffe00u + (uint32_t)i);
+    r[4] = 0x40;
+}
+
 static void fill_step3(synth_t *st, size_t i, unsigned char *r)
 {
     (void)st;
@@ -559,6 +580,32 @@ static void test_wide_axis(void)
     CHECK(infr_descriptor(s, buf, sizeof(buf), &len) == INFR_OK);
     CHECK(len > sizeof(range));
     CHECK(memcmp(buf + 8, range, sizeof(range)) == 0);
+    infr_model_destroy(s);
+}
+
+static void test_wide_unsigned_axis(void)
+{
+    static const unsigned char range[] = {0x15, 0x00, 0x27, 0xff, 0xff, 0xff, 0xff};
+    unsigned char buf[128];
+    size_t len = 0;
+    infr_model_t *s = walk_model(4, fill_wide_unsigned);
+    const infr_field_t *f = find_field(s, 0);
+
+    CHECK(f != NULL && f->kind == INFR_AXIS && f->bit_size == 32 && !(f->flags & INFR_SIGNED));
+    CHECK(f->logical_max > INT32_MAX && f->rest == (int64_t)0x80000000u);
+    CHECK(infr_descriptor(s, buf, sizeof(buf), &len) == INFR_OK);
+    CHECK(len > sizeof(range) + 8);
+    CHECK(memcmp(buf + 8, range, sizeof(range)) == 0);
+    infr_model_destroy(s);
+}
+
+static void test_counter32_range(void)
+{
+    infr_model_t *s = walk_model(5, fill_counter32);
+    const infr_field_t *f = find_field(s, 0);
+
+    CHECK(f != NULL && f->kind == INFR_COUNTER && f->bit_size == 32);
+    CHECK(f->logical_max == (int64_t)UINT32_MAX);
     infr_model_destroy(s);
 }
 
@@ -690,6 +737,8 @@ int main(void)
     test_checksums();
     test_checksum_false_positives();
     test_wide_axis();
+    test_wide_unsigned_axis();
+    test_counter32_range();
     test_counter_step();
     test_label_limit();
     test_hat_rest_15();

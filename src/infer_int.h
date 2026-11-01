@@ -86,7 +86,7 @@ INFR_INTERNAL const unsigned char *infr_sample(const infr_layout_t *s, size_t in
 INFR_INTERNAL int infr_bit(const unsigned char *report, size_t bit);
 INFR_INTERNAL uint32_t infr_raw(const unsigned char *report, size_t bit_offset, unsigned bit_size,
                                 int big_endian);
-INFR_INTERNAL int32_t infr_value(const infr_field_t *field, const unsigned char *report);
+INFR_INTERNAL int64_t infr_value(const infr_field_t *field, const unsigned char *report);
 INFR_INTERNAL int infr_transition_label(const infr_layout_t *s, size_t index);
 INFR_INTERNAL infr_field_t *infr_new_field(infr_layout_t *s, size_t bit_offset, unsigned bit_size,
                                            unsigned kind);

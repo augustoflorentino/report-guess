@@ -37,16 +37,16 @@ uint32_t infr_raw(const unsigned char *report, size_t bit_offset, unsigned bit_s
     }
 }
 
-int32_t infr_value(const infr_field_t *field, const unsigned char *report)
+int64_t infr_value(const infr_field_t *field, const unsigned char *report)
 {
     uint32_t raw = infr_raw(report, field->bit_offset, field->bit_size,
                             (field->flags & INFR_BIG_ENDIAN) != 0);
-    uint32_t sign;
+    int64_t sign;
 
     if (!(field->flags & INFR_SIGNED))
-        return (int32_t)raw;
-    sign = 1u << (field->bit_size - 1);
-    return (int32_t)((int64_t)(raw ^ sign) - (int64_t)sign);
+        return (int64_t)raw;
+    sign = (int64_t)1 << (field->bit_size - 1);
+    return ((int64_t)raw ^ sign) - sign;
 }
 
 int infr_transition_label(const infr_layout_t *s, size_t index)
@@ -375,7 +375,7 @@ void infr_find_counters(infr_layout_t *s)
             continue;
         f = infr_new_field(s, off, w, INFR_COUNTER);
         f->step = step;
-        f->logical_max = w >= 32 ? INT32_MAX : (int32_t)((1u << (w - 1)) * 2 - 1);
+        f->logical_max = ((int64_t)1 << w) - 1;
         off += w - 1;
     }
 }

@@ -12,8 +12,8 @@ typedef struct {
     uint32_t page;
     size_t padding;
     int globals_set;
-    int32_t min;
-    int32_t max;
+    int64_t min;
+    int64_t max;
     unsigned size;
     uint32_t count;
 } infr_writer_t;
@@ -40,7 +40,7 @@ static void infr_unsigned_item(infr_writer_t *w, unsigned type, unsigned tag, ui
     infr_item(w, type, tag, value, value <= 0xff ? 1 : value <= 0xffff ? 2 : 4);
 }
 
-static void infr_signed_item(infr_writer_t *w, unsigned tag, int32_t value)
+static void infr_signed_item(infr_writer_t *w, unsigned tag, int64_t value)
 {
     unsigned size = value >= -128 && value <= 127 ? 1 : value >= -32768 && value <= 32767 ? 2 : 4;
 
@@ -65,7 +65,7 @@ static void infr_size_count(infr_writer_t *w, unsigned size, uint32_t count)
     w->count = count;
 }
 
-static void infr_main_input(infr_writer_t *w, int32_t min, int32_t max, unsigned size, unsigned flags)
+static void infr_main_input(infr_writer_t *w, int64_t min, int64_t max, unsigned size, unsigned flags)
 {
     if (!w->globals_set || min != w->min)
         infr_signed_item(w, 0x1, min);
@@ -91,23 +91,23 @@ static void infr_flush_padding(infr_writer_t *w)
     }
 }
 
-static void infr_axis_range(const infr_field_t *f, int32_t *min, int32_t *max)
+static void infr_axis_range(const infr_field_t *f, int64_t *min, int64_t *max)
 {
     unsigned size = f->bit_size;
 
     if (f->flags & INFR_SIGNED) {
-        *max = (int32_t)((1u << (size - 1)) - 1);
+        *max = ((int64_t)1 << (size - 1)) - 1;
         *min = -*max - 1;
     } else {
         *min = 0;
-        *max = (int32_t)((1u << size) - 1);
+        *max = ((int64_t)1 << size) - 1;
     }
 }
 
 static void infr_write_field(infr_writer_t *w, const infr_field_t *f)
 {
-    int32_t min;
-    int32_t max;
+    int64_t min;
+    int64_t max;
 
     if (f->kind != INFR_BUTTON && f->kind != INFR_AXIS && f->kind != INFR_HAT) {
         w->padding += f->bit_size;

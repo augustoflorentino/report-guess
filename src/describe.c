@@ -16,23 +16,23 @@ static int infr_prefers_signed(const infr_layout_t *s, infr_field_t *f)
     size_t i;
 
     for (i = 1; i < s->count; i++) {
-        int32_t a;
-        int32_t b;
+        int64_t a;
+        int64_t b;
 
         f->flags &= ~INFR_SIGNED;
         a = infr_value(f, infr_sample(s, i - 1));
         b = infr_value(f, infr_sample(s, i));
-        as_unsigned += infr_abs64((int64_t)b - a);
+        as_unsigned += infr_abs64(b - a);
         f->flags |= INFR_SIGNED;
         a = infr_value(f, infr_sample(s, i - 1));
         b = infr_value(f, infr_sample(s, i));
-        as_signed += infr_abs64((int64_t)b - a);
+        as_signed += infr_abs64(b - a);
     }
     f->flags &= ~INFR_SIGNED;
     return as_signed * 2 < as_unsigned;
 }
 
-static int32_t infr_rest_value(const infr_layout_t *s, const infr_field_t *f)
+static int64_t infr_rest_value(const infr_layout_t *s, const infr_field_t *f)
 {
     int64_t sum = 0;
     size_t n = 0;
@@ -46,7 +46,7 @@ static int32_t infr_rest_value(const infr_layout_t *s, const infr_field_t *f)
     }
     if (n == 0)
         return infr_value(f, infr_sample(s, 0));
-    return (int32_t)((sum + (sum < 0 ? -(int64_t)n / 2 : (int64_t)n / 2)) / (int64_t)n);
+    return (sum + (sum < 0 ? -(int64_t)n / 2 : (int64_t)n / 2)) / (int64_t)n;
 }
 
 static void infr_measure(const infr_layout_t *s, infr_field_t *f)
@@ -57,13 +57,13 @@ static void infr_measure(const infr_layout_t *s, infr_field_t *f)
     f->logical_min = f->logical_max = infr_value(f, infr_sample(s, 0));
     f->noise = 0;
     for (i = 0; i < s->count; i++) {
-        int32_t v = infr_value(f, infr_sample(s, i));
-        int64_t d = infr_abs64((int64_t)v - f->rest);
+        int64_t v = infr_value(f, infr_sample(s, i));
+        int64_t d = infr_abs64(v - f->rest);
 
         f->logical_min = v < f->logical_min ? v : f->logical_min;
         f->logical_max = v > f->logical_max ? v : f->logical_max;
         if (s->labels[i] == INFR_REST && d > f->noise)
-            f->noise = d > INT32_MAX ? INT32_MAX : (int32_t)d;
+            f->noise = d;
     }
     if (f->noise > 0)
         f->flags |= INFR_NOISY;
@@ -81,7 +81,7 @@ static void infr_describe_bit(infr_field_t *f)
 
 static void infr_describe_hat(const infr_layout_t *s, infr_field_t *f)
 {
-    f->rest = (int32_t)infr_rest_raw(s, f->bit_offset, f->bit_size);
+    f->rest = (int64_t)infr_rest_raw(s, f->bit_offset, f->bit_size);
     f->flags |= INFR_NULL_STATE;
     f->flags &= ~INFR_NOISY;
     f->noise = 0;
@@ -91,7 +91,7 @@ static void infr_describe_hat(const infr_layout_t *s, infr_field_t *f)
 
 void infr_describe_field(infr_layout_t *s, infr_field_t *f)
 {
-    if (f->kind == INFR_AXIS && (f->bit_size >= 32 || infr_prefers_signed(s, f)))
+    if (f->kind == INFR_AXIS && infr_prefers_signed(s, f))
         f->flags |= INFR_SIGNED;
     f->label = infr_field_label(s, f);
     infr_measure(s, f);

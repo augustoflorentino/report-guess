@@ -50,9 +50,9 @@ static void print_fields(const infr_model_t *s)
     for (i = 0; i < infr_field_count(s); i++) {
         const infr_field_t *f = infr_field(s, i);
 
-        printf("report %-3u bit %-5zu %2u bits  %-8s label %-3d usage %04x:%04x  range %d..%d\n", f->report_id,
+        printf("report %-3u bit %-5zu %2u bits  %-8s label %-3d usage %04x:%04x  range %lld..%lld\n", f->report_id,
                f->bit_offset, f->bit_size, kinds[f->kind], f->label, (unsigned)f->usage_page, (unsigned)f->usage,
-               f->logical_min, f->logical_max);
+               (long long)f->logical_min, (long long)f->logical_max);
     }
 }
 

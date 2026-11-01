@@ -6,7 +6,7 @@
 
 #define INFR_MAX_REPORT 4096
 
-typedef char infr_field_size_check[sizeof(infr_field_t) == (sizeof(size_t) == 8 ? 80 : 64) ? 1 : -1];
+typedef char infr_field_size_check[sizeof(size_t) != 8 || sizeof(infr_field_t) == 104 ? 1 : -1];
 
 static void *infr_default_alloc(void *ctx, size_t size)
 {

@@ -54,8 +54,8 @@ static void print_field(const infr_field_t *f)
 {
     printf("%zu %u %s", f->bit_offset, f->bit_size, kinds[f->kind]);
     print_flags(f->flags);
-    printf(" range=%ld..%ld rest=%ld noise=%ld label=%d usage=%lx:%lx", (long)f->logical_min,
-           (long)f->logical_max, (long)f->rest, (long)f->noise, f->label, (unsigned long)f->usage_page,
+    printf(" range=%lld..%lld rest=%lld noise=%lld label=%d usage=%lx:%lx", (long long)f->logical_min,
+           (long long)f->logical_max, (long long)f->rest, (long long)f->noise, f->label, (unsigned long)f->usage_page,
            (unsigned long)f->usage);
     if (f->kind == INFR_CHECKSUM)
         printf(" algorithm=%u covered=%zu seed=%d", f->algorithm, f->covered_len, f->seed);

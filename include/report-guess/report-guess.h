@@ -81,10 +81,10 @@ typedef struct infr_field {
     unsigned bit_size;
     unsigned kind;
     unsigned flags;
-    int32_t logical_min;
-    int32_t logical_max;
-    int32_t rest;
-    int32_t noise;
+    int64_t logical_min;
+    int64_t logical_max;
+    int64_t rest;
+    int64_t noise;
     int label;
     uint32_t usage_page;
     uint32_t usage;

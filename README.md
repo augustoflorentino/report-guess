@@ -104,8 +104,8 @@ Fields (`infr_field_t`, layout fixed for the 3.x series):
 | `bit_offset`, `bit_size` | position in the report, bit 0 is the low bit of byte 0 (the ID byte, when there is one) |
 | `kind` | `INFR_CONSTANT`, `INFR_BUTTON`, `INFR_AXIS`, `INFR_HAT`, `INFR_COUNTER`, `INFR_CHECKSUM`, `INFR_NOISE` |
 | `flags` | `INFR_SIGNED`, `INFR_BIG_ENDIAN`, `INFR_ACTIVE_LOW` |
-| `logical_min`, `logical_max` | observed range; for hats the direction range; for counters the wrap value |
-| `rest`, `noise` | value at rest and its spread while untouched |
+| `logical_min`, `logical_max` | observed range (`int64_t`, so a 32-bit unsigned field fits); for hats the direction range; for counters the wrap value |
+| `rest`, `noise` | value at rest and its spread while untouched (`int64_t`) |
 | `label` | the action that moves the field, or `INFR_NO_LABEL` |
 | `usage_page`, `usage` | HID usage written to the descriptor |
 | `algorithm`, `covered_len`, `seed` | checksums: `INFR_SUM8` to `INFR_CRC32`, bytes covered from the start, crc32 seed byte or -1 |
@@ -118,7 +118,7 @@ Limits:
 - at most `INFR_MAX_HINTS` usages set with `infr_set_usage` per model; usage page 0 is rejected
 - one checksum per report, which must be the last bytes it covers
 - hats use values 0 to 7 plus one rest value of 8 or 15
-- fields up to 32 bits; 32-bit axes are always signed
+- fields up to 32 bits; signed or unsigned at any width
 - at most `INFR_MAX_REPORTS` (16) report IDs per session; report ID 0 is rejected
 
 ## Validation
